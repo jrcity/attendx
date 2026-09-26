@@ -15,7 +15,8 @@ import {
   Sparkles,
   Database,
   Cpu,
-  ShieldCheck
+  ShieldCheck,
+  FileCode
 } from 'lucide-react';
 import { useSystemMode } from '@/context/SystemModeContext';
 
@@ -28,6 +29,7 @@ const navigation = [
   { name: 'Reports', href: '/reports', icon: FileBarChart },
   { name: 'Devices', href: '/devices', icon: HardDrive },
   { name: 'Admin Control', href: '/admin-control', icon: ShieldCheck },
+  { name: 'Firmware Blueprint', href: '/contract', icon: FileCode },
 ];
 
 export function Sidebar() {

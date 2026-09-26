@@ -24,6 +24,9 @@ interface SystemModeContextType {
   triggerSimulatedCheckIn: (userId: string, mode?: 'fingerprint' | 'pin') => void;
   triggerSimulatedEnrollment: (userId: string, targetSlot?: number) => void;
   triggerSimulatedHeartbeat: (deviceId: string) => void;
+  toggleSimulatedDeviceWifi: (deviceId: string) => void;
+  syncSimulatedDevice: (deviceId: string) => void;
+  rebootSimulatedDevice: (deviceId: string) => void;
   deleteSimulatedDevice: (deviceId: string) => void;
   addSimulatedDevice: (device: Device) => void;
   resetSimulationData: () => void;
@@ -33,124 +36,146 @@ interface SystemModeContextType {
   isResettingDb: boolean;
 }
 
-const SystemModeContext = createContext<SystemModeContextType | undefined>(undefined);
+interface StoredAuth {
+  isAuthenticated: boolean;
+  adminEmail: string;
+  isSimulationMode: boolean;
+}
 
-// External store subscription helpers for SSR-safe hydration
-const subscribeToStorage = (callback: () => void) => {
-  if (typeof window === 'undefined') return () => {};
-  window.addEventListener('storage', callback);
-  return () => window.removeEventListener('storage', callback);
+const emptyState: StoredAuth = {
+  isAuthenticated: false,
+  adminEmail: 'redemptionjonathan1@gmail.com',
+  isSimulationMode: false,
 };
 
+let cachedState: StoredAuth = emptyState;
+const listeners = new Set<() => void>();
+
+function syncFromStorage(): StoredAuth {
+  if (typeof window === 'undefined') return emptyState;
+  try {
+    const authRaw = localStorage.getItem('attendx_admin_auth');
+    let isAuth = false;
+    let email = 'redemptionjonathan1@gmail.com';
+    if (authRaw) {
+      const parsed = JSON.parse(authRaw);
+      if (parsed?.email && parsed?.sessionToken) {
+        isAuth = true;
+        email = parsed.email;
+      }
+    }
+    const simRaw = localStorage.getItem('attendx_simulation_mode');
+    const isSim = simRaw === 'true';
+
+    if (
+      cachedState.isAuthenticated === isAuth &&
+      cachedState.adminEmail === email &&
+      cachedState.isSimulationMode === isSim
+    ) {
+      return cachedState;
+    }
+
+    cachedState = {
+      isAuthenticated: isAuth,
+      adminEmail: email,
+      isSimulationMode: isSim,
+    };
+    return cachedState;
+  } catch {
+    return cachedState;
+  }
+}
+
+// Initial read on client
+if (typeof window !== 'undefined') {
+  syncFromStorage();
+}
+
+const authStore = {
+  getSnapshot(): StoredAuth {
+    if (typeof window !== 'undefined') {
+      return syncFromStorage();
+    }
+    return emptyState;
+  },
+  getServerSnapshot(): StoredAuth {
+    return emptyState;
+  },
+  subscribe(callback: () => void) {
+    listeners.add(callback);
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === 'attendx_admin_auth' || e.key === 'attendx_simulation_mode') {
+        syncFromStorage();
+        callback();
+      }
+    };
+    window.addEventListener('storage', handleStorage);
+    return () => {
+      listeners.delete(callback);
+      window.removeEventListener('storage', handleStorage);
+    };
+  },
+  setAuth(isAuth: boolean, email: string) {
+    if (typeof window !== 'undefined') {
+      if (isAuth) {
+        localStorage.setItem(
+          'attendx_admin_auth',
+          JSON.stringify({ email, sessionToken: `sess_${Date.now()}` })
+        );
+      } else {
+        localStorage.removeItem('attendx_admin_auth');
+      }
+      syncFromStorage();
+      listeners.forEach((l) => l());
+    }
+  },
+  setSimulationMode(val: boolean) {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('attendx_simulation_mode', val ? 'true' : 'false');
+      syncFromStorage();
+      listeners.forEach((l) => l());
+    }
+  },
+};
+
+const SystemModeContext = createContext<SystemModeContextType | null>(null);
+
 export function SystemModeProvider({ children }: { children: React.ReactNode }) {
-  // Safe hydration detection without setState in effect
-  const isHydrated = useSyncExternalStore(
-    subscribeToStorage,
-    () => true,
-    () => false
+  const authData = useSyncExternalStore(
+    authStore.subscribe,
+    authStore.getSnapshot,
+    authStore.getServerSnapshot
   );
 
-  const rawAuth = useSyncExternalStore(
-    subscribeToStorage,
-    () => {
-      try {
-        return localStorage.getItem('attendx_admin_auth') || '';
-      } catch {
-        return '';
-      }
-    },
-    () => ''
-  );
+  const [isHydrated, setIsHydrated] = useState(false);
+  const [simState, setSimState] = useState<SimulationState>(() => createInitialSimulationState());
+  const [isResettingDb, setIsResettingDb] = useState(false);
 
-  const rawSim = useSyncExternalStore(
-    subscribeToStorage,
-    () => {
-      try {
-        return localStorage.getItem('attendx_simulation_mode') || 'false';
-      } catch {
-        return 'false';
-      }
-    },
-    () => 'false'
-  );
+  React.useEffect(() => {
+    setIsHydrated(true);
+  }, []);
 
-  const [activeSession, setActiveSession] = useState<{ email: string; token: string } | null>(null);
-  const [explicitSimMode, setExplicitSimMode] = useState<boolean | null>(null);
-  const [simState, setSimState] = useState<SimulationState>(createInitialSimulationState);
-  const [isResettingDb, setIsResettingDb] = useState<boolean>(false);
-
-  // Compute authenticated state
-  const { isAuthenticated, adminEmail } = useMemo(() => {
-    if (activeSession) {
-      return { isAuthenticated: true, adminEmail: activeSession.email };
-    }
-    if (rawAuth) {
-      try {
-        const parsed = JSON.parse(rawAuth);
-        if (parsed.email && parsed.sessionToken) {
-          return { isAuthenticated: true, adminEmail: parsed.email };
-        }
-      } catch {
-        // Ignore
-      }
-    }
-    return { isAuthenticated: false, adminEmail: 'redemptionjonathan1@gmail.com' };
-  }, [activeSession, rawAuth]);
-
-  // Compute simulation mode state
-  const isSimulationMode = useMemo(() => {
-    if (explicitSimMode !== null) return explicitSimMode;
-    return rawSim === 'true';
-  }, [explicitSimMode, rawSim]);
-
-  const login = useCallback((email: string, sessionToken: string) => {
-    setActiveSession({ email, token: sessionToken });
-    try {
-      localStorage.setItem('attendx_admin_auth', JSON.stringify({ email, sessionToken, loggedInAt: new Date().toISOString() }));
-      window.dispatchEvent(new Event('storage'));
-    } catch {
-      // Ignore
-    }
+  const login = useCallback((email: string) => {
+    authStore.setAuth(true, email);
   }, []);
 
   const logout = useCallback(() => {
-    setActiveSession(null);
-    try {
-      localStorage.removeItem('attendx_admin_auth');
-      window.dispatchEvent(new Event('storage'));
-    } catch {
-      // Ignore
-    }
-  }, []);
-
-  const toggleSimulationMode = useCallback(() => {
-    setExplicitSimMode(prev => {
-      const current = prev !== null ? prev : (typeof window !== 'undefined' && localStorage.getItem('attendx_simulation_mode') === 'true');
-      const next = !current;
-      try {
-        localStorage.setItem('attendx_simulation_mode', String(next));
-        window.dispatchEvent(new Event('storage'));
-      } catch {
-        // Ignore
-      }
-      return next;
-    });
+    authStore.setAuth(false, 'redemptionjonathan1@gmail.com');
   }, []);
 
   const setSimulationMode = useCallback((val: boolean) => {
-    setExplicitSimMode(val);
-    try {
-      localStorage.setItem('attendx_simulation_mode', String(val));
-      window.dispatchEvent(new Event('storage'));
-    } catch {
-      // Ignore
-    }
+    authStore.setSimulationMode(val);
   }, []);
+
+  const toggleSimulationMode = useCallback(() => {
+    authStore.setSimulationMode(!authData.isSimulationMode);
+  }, [authData.isSimulationMode]);
 
   const resetSimulationData = useCallback(() => {
     setSimState(createInitialSimulationState());
   }, []);
 
+  // Simulation Triggers (Zero DB interaction)
   const triggerSimulatedCheckIn = useCallback((userId: string, mode: 'fingerprint' | 'pin' = 'fingerprint') => {
     setSimState(prev => {
       const user = prev.users.find(u => u.id === userId);
@@ -235,6 +260,69 @@ export function SystemModeProvider({ children }: { children: React.ReactNode }) 
     });
   }, []);
 
+  const toggleSimulatedDeviceWifi = useCallback((deviceId: string) => {
+    setSimState(prev => {
+      const updatedDevices = prev.devices.map(d => {
+        if (d.id === deviceId) {
+          const isConn = d.wifiStatus === 'Connected';
+          return {
+            ...d,
+            wifiStatus: (isConn ? 'Disconnected' : 'Connected') as 'Connected' | 'Disconnected',
+            status: (isConn ? 'OFFLINE' : 'ONLINE') as 'ONLINE' | 'OFFLINE'
+          };
+        }
+        return d;
+      });
+      return {
+        ...prev,
+        devices: updatedDevices,
+        liveLogMessage: `[SIMULATION] Device ${deviceId} Wi-Fi toggled`
+      };
+    });
+  }, []);
+
+  const syncSimulatedDevice = useCallback((deviceId: string) => {
+    setSimState(prev => {
+      const updatedDevices = prev.devices.map(d => {
+        if (d.id === deviceId) {
+          return {
+            ...d,
+            pendingRecords: 0,
+            lastSync: new Date().toISOString()
+          };
+        }
+        return d;
+      });
+      return {
+        ...prev,
+        devices: updatedDevices,
+        liveLogMessage: `[SIMULATION] Device ${deviceId} synchronized (0 pending records)`
+      };
+    });
+  }, []);
+
+  const rebootSimulatedDevice = useCallback((deviceId: string) => {
+    setSimState(prev => {
+      const updatedDevices = prev.devices.map(d => {
+        if (d.id === deviceId) {
+          return {
+            ...d,
+            status: 'ONLINE' as const,
+            wifiStatus: 'Connected' as const,
+            lastSync: new Date().toISOString(),
+            esp32Heap: '298 KB Free / 520 KB Total'
+          };
+        }
+        return d;
+      });
+      return {
+        ...prev,
+        devices: updatedDevices,
+        liveLogMessage: `[SIMULATION] Device ${deviceId} soft rebooted`
+      };
+    });
+  }, []);
+
   const deleteSimulatedDevice = useCallback((deviceId: string) => {
     setSimState(prev => {
       const cleanId = deviceId.trim().toUpperCase();
@@ -286,17 +374,20 @@ export function SystemModeProvider({ children }: { children: React.ReactNode }) 
 
   const contextValue = useMemo(() => ({
     isHydrated,
-    isAuthenticated,
-    adminEmail,
+    isAuthenticated: authData.isAuthenticated,
+    adminEmail: authData.adminEmail,
     login,
     logout,
-    isSimulationMode,
+    isSimulationMode: authData.isSimulationMode,
     toggleSimulationMode,
     setSimulationMode,
     simState,
     triggerSimulatedCheckIn,
     triggerSimulatedEnrollment,
     triggerSimulatedHeartbeat,
+    toggleSimulatedDeviceWifi,
+    syncSimulatedDevice,
+    rebootSimulatedDevice,
     deleteSimulatedDevice,
     addSimulatedDevice,
     resetSimulationData,
@@ -304,17 +395,20 @@ export function SystemModeProvider({ children }: { children: React.ReactNode }) 
     isResettingDb
   }), [
     isHydrated,
-    isAuthenticated,
-    adminEmail,
+    authData.isAuthenticated,
+    authData.adminEmail,
     login,
     logout,
-    isSimulationMode,
+    authData.isSimulationMode,
     toggleSimulationMode,
     setSimulationMode,
     simState,
     triggerSimulatedCheckIn,
     triggerSimulatedEnrollment,
     triggerSimulatedHeartbeat,
+    toggleSimulatedDeviceWifi,
+    syncSimulatedDevice,
+    rebootSimulatedDevice,
     deleteSimulatedDevice,
     addSimulatedDevice,
     resetSimulationData,

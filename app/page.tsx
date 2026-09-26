@@ -1,7 +1,11 @@
 "use client"
 import React, { useEffect, useState, useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Users, UserCheck, UserX, Clock, Fingerprint, Hash, HardDrive, Camera, CameraOff, Sparkles, Activity, CheckCircle2 } from 'lucide-react'
+import { 
+  Users, UserCheck, UserX, Clock, Fingerprint, Hash, 
+  HardDrive, Camera, CameraOff, Sparkles, Activity, CheckCircle2,
+  LogIn, LogOut, Building2
+} from 'lucide-react'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, LineChart, Line, CartesianGrid, XAxis, YAxis } from 'recharts'
 import { cn } from '@/lib/utils'
 import { useSystemMode } from '@/context/SystemModeContext'
@@ -13,16 +17,20 @@ export default function DashboardPage() {
   const [realFeed, setRealFeed] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
+  // Live polling for dashboard data & feed
   useEffect(() => {
     let active = true
-    if (!isSimulationMode) {
+
+    const fetchDashboardData = () => {
+      if (isSimulationMode) return
+
       Promise.all([
-        fetch('/api/dashboard').then(r => r.json()),
-        fetch('/api/attendance/feed').then(r => r.json())
+        fetch('/api/dashboard').then(r => r.ok ? r.json() : null).catch(() => null),
+        fetch('/api/attendance/feed').then(r => r.ok ? r.json() : []).catch(() => [])
       ])
         .then(([dashData, feedData]) => {
           if (active) {
-            setRealData(dashData)
+            if (dashData) setRealData(dashData)
             setRealFeed(Array.isArray(feedData) ? feedData : [])
             setLoading(false)
           }
@@ -32,10 +40,23 @@ export default function DashboardPage() {
           if (active) setLoading(false)
         })
     }
-    return () => { active = false }
+
+    fetchDashboardData()
+
+    // 3-second live polling interval so ESP32 terminal scans reflect immediately
+    const interval = setInterval(() => {
+      if (active && !isSimulationMode) {
+        fetchDashboardData()
+      }
+    }, 3000)
+
+    return () => {
+      active = false
+      clearInterval(interval)
+    }
   }, [isSimulationMode])
 
-  // Derive simulation dashboard data when in Simulation Mode (Zero DB)
+  // Derive simulation dashboard data when in Simulation Mode
   const simulationDerived = useMemo(() => {
     if (!isSimulationMode) return null
 
@@ -49,6 +70,8 @@ export default function DashboardPage() {
     const absentToday = Math.max(0, totalUsers - presentToday)
     const lateToday = todaysAttendance.filter(a => a.status === 'Late').length
     const onTimeToday = presentToday - lateToday
+    const currentlyPresent = todaysAttendance.filter(a => !a.checkOutTime).length
+    const checkedOutToday = todaysAttendance.filter(a => !!a.checkOutTime).length
 
     const fpCount = todaysAttendance.filter(a => a.checkInMode === 'fingerprint').length
     const pinCount = todaysAttendance.filter(a => a.checkInMode === 'pin').length
@@ -64,15 +87,23 @@ export default function DashboardPage() {
       trend.push({ name: dayName, present: count })
     }
 
-    // Enriched feed with user names
+    // Enriched feed with user names and checkout states
     const feed = simState.attendance.map(a => {
       const user = simState.users.find(u => u.id === a.userId)
       const hasImage = simState.images.some(img => img.attendanceId === a.id)
+      const isCheckedOut = Boolean(a.checkOutTime)
       return {
         ...a,
         user,
-        hasImage
+        hasImage,
+        isCheckedOut,
+        lastEventType: isCheckedOut ? 'CHECK_OUT' : 'CHECK_IN',
+        lastEventTime: a.checkOutTime || a.checkInTime || a.createdAt
       }
+    }).sort((a, b) => {
+      const timeB = Math.max(new Date(b.checkOutTime || 0).getTime(), new Date(b.checkInTime || b.createdAt).getTime())
+      const timeA = Math.max(new Date(a.checkOutTime || 0).getTime(), new Date(a.checkInTime || a.createdAt).getTime())
+      return timeB - timeA
     })
 
     return {
@@ -83,7 +114,9 @@ export default function DashboardPage() {
         presentToday,
         absentToday,
         lateToday,
-        onTimeToday
+        onTimeToday,
+        currentlyPresent,
+        checkedOutToday
       },
       analytics: {
         fingerprint: fpCount,
@@ -103,15 +136,15 @@ export default function DashboardPage() {
     return (
       <div className="space-y-6 animate-pulse">
         <div className="h-8 w-64 bg-slate-200 rounded"></div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[1,2,3,4].map(i => <div key={i} className="h-32 bg-slate-200 rounded-lg"></div>)}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          {[1,2,3,4,5].map(i => <div key={i} className="h-28 bg-slate-200 rounded-lg"></div>)}
         </div>
       </div>
     )
   }
 
   const { metrics, analytics, trend } = activeData || {
-    metrics: { totalUsers: 0, presentToday: 0, absentToday: 0, lateToday: 0 },
+    metrics: { totalUsers: 0, presentToday: 0, absentToday: 0, lateToday: 0, currentlyPresent: 0, checkedOutToday: 0 },
     analytics: { fingerprint: 0, pin: 0 },
     trend: []
   }
@@ -133,7 +166,7 @@ export default function DashboardPage() {
           <p className="text-xs text-slate-500 mt-1">
             {isSimulationMode 
               ? 'Simulation Mode: Dynamic in-memory stream without touching database.' 
-              : "Live Firestore: Synchronized with ESP32 terminals and physical sensors."}
+              : "Live Firestore: Polling live events from ESP32 optical terminals and physical sensors."}
           </p>
         </div>
 
@@ -153,20 +186,30 @@ export default function DashboardPage() {
               </button>
             </div>
           ) : (
-            <span className="flex items-center text-emerald-700 font-semibold bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+            <span className="flex items-center text-emerald-700 font-semibold bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200 shadow-sm">
               <span className="w-2 h-2 rounded-full bg-emerald-500 mr-2 animate-pulse"></span>
-              Live Firestore (Hardware Ready)
+              Live Terminal Sync (3s Auto-Refresh)
             </span>
           )}
         </div>
       </div>
 
-      {/* Metrics Row */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard title="Total Users" value={metrics.totalUsers} icon={<Users className="w-5 h-5 text-slate-400" />} />
-        <StatCard title="Present Today" value={metrics.presentToday} icon={<UserCheck className="w-5 h-5 text-emerald-500" />} />
-        <StatCard title="Absent Today" value={metrics.absentToday} icon={<UserX className="w-5 h-5 text-red-500" />} />
-        <StatCard title="Late Today" value={metrics.lateToday} icon={<Clock className="w-5 h-5 text-amber-500" />} />
+      {/* Metrics Row (5 cards including In Building & Checked Out) */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        <StatCard title="Total Users" value={metrics.totalUsers} icon={<Users className="w-4 h-4 text-slate-400" />} />
+        <StatCard title="Present Today" value={metrics.presentToday} icon={<UserCheck className="w-4 h-4 text-emerald-500" />} />
+        <StatCard 
+          title="In Building" 
+          value={metrics.currentlyPresent ?? (metrics.presentToday - (metrics.checkedOutToday || 0))} 
+          icon={<Building2 className="w-4 h-4 text-blue-500" />} 
+          highlight="active"
+        />
+        <StatCard 
+          title="Checked Out" 
+          value={metrics.checkedOutToday || 0} 
+          icon={<LogOut className="w-4 h-4 text-indigo-500" />} 
+        />
+        <StatCard title="Late Today" value={metrics.lateToday} icon={<Clock className="w-4 h-4 text-amber-500" />} />
       </div>
 
       {/* Analytics & Trend Grid */}
@@ -251,84 +294,110 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      {/* Live Feed Card */}
+      {/* Live Feed Card with Check-In & Check-Out Visibility */}
       <Card className="border-slate-200 shadow-sm bg-white">
-        <CardHeader>
-          <CardTitle className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-            Recent Attendance Stream
+        <CardHeader className="flex flex-row items-center justify-between pb-3">
+          <CardTitle className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center">
+            <Activity className="w-3.5 h-3.5 mr-1.5 text-blue-600" />
+            Recent Attendance Stream (Check-In & Check-Out)
           </CardTitle>
+          <span className="text-[11px] text-slate-400 font-mono">
+            Auto-Updated
+          </span>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {activeFeed.slice(0, 6).map((record) => (
-              <div key={record.id} className="flex items-start justify-between border-b border-slate-100 pb-3 last:border-0 last:pb-0">
-                <div className="flex items-start space-x-3">
-                  <div className={cn(
-                    "p-2 rounded-xl",
-                    record.checkInMode === 'fingerprint' ? 'bg-indigo-50 text-indigo-600' : 'bg-amber-50 text-amber-600'
-                  )}>
-                    {record.checkInMode === 'fingerprint' ? <Fingerprint className="w-4 h-4" /> : <Hash className="w-4 h-4" />}
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold text-slate-900">
-                      {record.user?.name || record.userId} 
-                      <span className="text-[11px] text-slate-500 font-normal ml-2">{record.user?.role || 'User'}</span>
-                    </p>
-                    <div className="flex items-center space-x-2 mt-0.5">
-                      <span className="text-[11px] text-slate-500">
-                        {new Date(record.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                      <span className="text-slate-300">•</span>
-                      <span className="text-[11px] font-medium text-slate-700 capitalize">{record.checkInMode}</span>
-                      {record.offlineBuffered && (
-                        <>
-                          <span className="text-slate-300">•</span>
-                          <span className="text-[10px] font-medium text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded flex items-center" title="Replayed from terminal offline buffer after outage">
-                            <Clock className="w-2.5 h-2.5 mr-1 text-amber-600" /> Buffered
+            {activeFeed.slice(0, 8).map((record) => {
+              const isCheckedOut = Boolean(record.checkOutTime)
+              return (
+                <div key={record.id} className="flex items-start justify-between border-b border-slate-100 pb-3 last:border-0 last:pb-0">
+                  <div className="flex items-start space-x-3">
+                    <div className={cn(
+                      "p-2 rounded-xl flex items-center justify-center",
+                      record.checkInMode === 'fingerprint' ? 'bg-indigo-50 text-indigo-600' : 'bg-amber-50 text-amber-600'
+                    )}>
+                      {record.checkInMode === 'fingerprint' ? <Fingerprint className="w-4 h-4" /> : <Hash className="w-4 h-4" />}
+                    </div>
+                    <div>
+                      <div className="flex items-center space-x-2">
+                        <p className="text-xs font-semibold text-slate-900">
+                          {record.user?.name || record.userId} 
+                          <span className="text-[11px] text-slate-500 font-normal ml-2">{record.user?.role || 'User'}</span>
+                        </p>
+                        {isCheckedOut ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                            <LogOut className="w-2.5 h-2.5 mr-1 text-blue-600" /> Checked Out
                           </span>
-                        </>
-                      )}
-                      {record.status === 'Late' && (
-                        <>
-                          <span className="text-slate-300">•</span>
-                          <span className="text-[10px] font-semibold text-red-600 bg-red-50 px-2 py-0.5 rounded-full">
-                            Late ({record.lateDurationMinutes}m)
-                          </span>
-                        </>
-                      )}
-                      {record.checkInMode === 'pin' && (
-                        record.hasImage ? (
-                          <>
-                            <span className="text-slate-300">•</span>
-                            <span className="text-[10px] font-medium text-indigo-600 flex items-center">
-                              <Camera className="w-3 h-3 mr-1"/> Evidence
-                            </span>
-                          </>
                         ) : (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <LogIn className="w-2.5 h-2.5 mr-1 text-emerald-600" /> In Building
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1">
+                        {record.checkInTime && (
+                          <span className="text-[11px] text-slate-600 flex items-center font-mono">
+                            <LogIn className="w-3 h-3 mr-1 text-emerald-600" />
+                            In: {new Date(record.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        )}
+                        {isCheckedOut && (
                           <>
                             <span className="text-slate-300">•</span>
-                            <span className="text-[10px] font-normal text-slate-400 flex items-center" title="Photo dropped mid-upload during outage; PIN verified">
-                              <CameraOff className="w-2.5 h-2.5 mr-1 text-slate-400"/> No Photo (Outage)
+                            <span className="text-[11px] text-slate-600 flex items-center font-mono">
+                              <LogOut className="w-3 h-3 mr-1 text-blue-600" />
+                              Out: {new Date(record.checkOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </span>
                           </>
-                        )
-                      )}
-                      {record.checkInMode === 'fingerprint' && record.hasImage && (
-                        <>
-                          <span className="text-slate-300">•</span>
-                          <span className="text-[10px] font-medium text-indigo-600 flex items-center">
-                            <Camera className="w-3 h-3 mr-1"/> Evidence
-                          </span>
-                        </>
-                      )}
+                        )}
+                        <span className="text-slate-300">•</span>
+                        <span className="text-[11px] font-medium text-slate-700 capitalize">
+                          {record.checkInMode || 'fingerprint'}
+                        </span>
+                        {record.offlineBuffered && (
+                          <>
+                            <span className="text-slate-300">•</span>
+                            <span className="text-[10px] font-medium text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded flex items-center" title="Replayed from terminal offline buffer after outage">
+                              <Clock className="w-2.5 h-2.5 mr-1 text-amber-600" /> Buffered
+                            </span>
+                          </>
+                        )}
+                        {record.status === 'Late' && (
+                          <>
+                            <span className="text-slate-300">•</span>
+                            <span className="text-[10px] font-semibold text-red-600 bg-red-50 px-2 py-0.5 rounded-full">
+                              Late ({record.lateDurationMinutes}m)
+                            </span>
+                          </>
+                        )}
+                        {record.checkInMode === 'pin' && (
+                          record.hasImage ? (
+                            <>
+                              <span className="text-slate-300">•</span>
+                              <span className="text-[10px] font-medium text-indigo-600 flex items-center">
+                                <Camera className="w-3 h-3 mr-1"/> Evidence
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <span className="text-slate-300">•</span>
+                              <span className="text-[10px] font-normal text-slate-400 flex items-center" title="Photo dropped mid-upload during outage; PIN verified">
+                                <CameraOff className="w-2.5 h-2.5 mr-1 text-slate-400"/> No Photo
+                              </span>
+                            </>
+                          )
+                        )}
+                      </div>
                     </div>
                   </div>
+                  <div className="text-[11px] text-slate-400 font-mono text-right">
+                    <div>{record.deviceId || 'DEV_TERM_01'}</div>
+                    <div className="text-[10px] text-slate-400">{record.date}</div>
+                  </div>
                 </div>
-                <div className="text-[11px] text-slate-400 font-mono">
-                  {record.deviceId || 'DEV_TERM_01'}
-                </div>
-              </div>
-            ))}
+              )
+            })}
 
             {activeFeed.length === 0 && (
               <div className="py-8 text-center">
@@ -346,16 +415,19 @@ export default function DashboardPage() {
   )
 }
 
-function StatCard({ title, value, icon }: { title: string, value: number, icon: React.ReactNode }) {
+function StatCard({ title, value, icon, highlight }: { title: string, value: number, icon: React.ReactNode, highlight?: string }) {
   return (
-    <Card className="border-slate-200 shadow-sm bg-white">
-      <CardContent className="p-5">
+    <Card className={cn(
+      "border-slate-200 shadow-sm bg-white",
+      highlight === 'active' && "border-blue-200 bg-blue-50/20"
+    )}>
+      <CardContent className="p-4 sm:p-5">
         <div className="flex items-center justify-between">
           <div className="space-y-1">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{title}</p>
-            <p className="text-2xl font-bold tracking-tight text-slate-900">{value}</p>
+            <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider truncate">{title}</p>
+            <p className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">{value}</p>
           </div>
-          <div className="p-2.5 bg-slate-50 rounded-xl">
+          <div className="p-2 sm:p-2.5 bg-slate-50 rounded-xl">
             {icon}
           </div>
         </div>

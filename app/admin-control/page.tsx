@@ -43,21 +43,20 @@ export default function AdminControlPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // EmailJS Settings & Live Test State
-  const [emailJsServiceId, setEmailJsServiceId] = useState<string>(() => {
-    if (typeof window === 'undefined') return '';
-    return localStorage.getItem('attendx_emailjs_service_id') || '';
-  });
-  const [emailJsTemplateId, setEmailJsTemplateId] = useState<string>(() => {
-    if (typeof window === 'undefined') return '';
-    return localStorage.getItem('attendx_emailjs_template_id') || '';
-  });
-  const [emailJsPublicKey, setEmailJsPublicKey] = useState<string>(() => {
-    if (typeof window === 'undefined') return '';
-    return localStorage.getItem('attendx_emailjs_public_key') || '';
-  });
+  const [emailJsServiceId, setEmailJsServiceId] = useState<string>('');
+  const [emailJsTemplateId, setEmailJsTemplateId] = useState<string>('');
+  const [emailJsPublicKey, setEmailJsPublicKey] = useState<string>('');
   const [showEmailJsConfig, setShowEmailJsConfig] = useState(false);
   const [testSending, setTestSending] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string; previewCode?: string } | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setEmailJsServiceId(localStorage.getItem('attendx_emailjs_service_id') || '');
+      setEmailJsTemplateId(localStorage.getItem('attendx_emailjs_template_id') || '');
+      setEmailJsPublicKey(localStorage.getItem('attendx_emailjs_public_key') || '');
+    }
+  }, []);
 
   const fetchAdministrators = useCallback(async () => {
     setLoading(true);

@@ -6,7 +6,6 @@ export async function GET() {
   try {
     const db = await readDb();
     const now = Date.now();
-    let dbModified = false;
 
     // Enrich devices with dynamic heartbeat liveness and hardware subsystems
     const enrichedDevices: Device[] = db.devices.map((device, index) => {
@@ -19,12 +18,6 @@ export async function GET() {
       const isAlive = lastSyncMs > 0 && (now - lastSyncMs) <= timeoutThresholdMs;
       const computedStatus: 'ONLINE' | 'OFFLINE' = isAlive ? 'ONLINE' : 'OFFLINE';
       const computedWifi: 'Connected' | 'Disconnected' = isAlive ? (device.wifiStatus || 'Connected') : 'Disconnected';
-
-      if (device.status !== computedStatus || device.wifiStatus !== computedWifi) {
-        device.status = computedStatus;
-        device.wifiStatus = computedWifi;
-        dbModified = true;
-      }
 
       return {
         ...device,
@@ -62,13 +55,10 @@ export async function GET() {
       };
     });
 
-    if (dbModified) {
-      await writeDb(db);
-    }
-
     return NextResponse.json(enrichedDevices);
   } catch (err) {
-    return NextResponse.json({ error: 'Failed to fetch devices' }, { status: 500 });
+    console.error('Error fetching devices:', err);
+    return NextResponse.json([], { status: 200 });
   }
 }
 

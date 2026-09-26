@@ -16,11 +16,11 @@ export interface SimulationState {
 }
 
 const MOCK_USERS: User[] = [
-  { id: 'USR001', name: 'John Doe', role: 'Student', status: 'Active', dateRegistered: '2026-09-01T08:00:00Z', totalAttendance: 45, lateOccurrences: 1 },
-  { id: 'USR002', name: 'Amina Yusuf', role: 'Staff', status: 'Active', dateRegistered: '2026-08-15T08:00:00Z', totalAttendance: 118, lateOccurrences: 0 },
-  { id: 'USR003', name: 'David Smith', role: 'Student', status: 'Active', dateRegistered: '2026-09-05T08:00:00Z', totalAttendance: 40, lateOccurrences: 4 },
-  { id: 'USR004', name: 'Prof. Marcus Chen', role: 'Staff', status: 'Active', dateRegistered: '2026-08-01T08:00:00Z', totalAttendance: 140, lateOccurrences: 0 },
-  { id: 'USR005', name: 'Zainab Bello', role: 'Student', status: 'Active', dateRegistered: '2026-09-10T08:00:00Z', totalAttendance: 38, lateOccurrences: 2 }
+  { id: '001A', name: 'John Doe', role: 'Student', status: 'Active', dateRegistered: '2026-09-01T08:00:00Z', totalAttendance: 45, lateOccurrences: 1 },
+  { id: '002B', name: 'Amina Yusuf', role: 'Staff', status: 'Active', dateRegistered: '2026-08-15T08:00:00Z', totalAttendance: 118, lateOccurrences: 0 },
+  { id: '003A', name: 'David Smith', role: 'Student', status: 'Active', dateRegistered: '2026-09-05T08:00:00Z', totalAttendance: 40, lateOccurrences: 4 },
+  { id: '004B', name: 'Prof. Marcus Chen', role: 'Staff', status: 'Active', dateRegistered: '2026-08-01T08:00:00Z', totalAttendance: 140, lateOccurrences: 0 },
+  { id: '005A', name: 'Zainab Bello', role: 'Student', status: 'Active', dateRegistered: '2026-09-10T08:00:00Z', totalAttendance: 38, lateOccurrences: 2 }
 ];
 
 const MOCK_DEVICES: Device[] = [
@@ -41,7 +41,7 @@ const MOCK_DEVICES: Device[] = [
     esp32Heap: '312 KB Free / 520 KB Total',
     fingerprintStatus: 'DY50 Optical Sensor Ready',
     cameraStatus: 'ESP32-CAM Active (SVGA OV2640)',
-    keypadStatus: '4x4 Matrix Active',
+    keypadStatus: '4x4 Matrix Active (0-9 + A-D)',
     lcdStatus: '16x2 I2C LCD Ready (0x27)',
     lcdText: ['** ATTENDX [SIM] **', 'Ready for Scan...', 'System: SIMULATED', 'Net: HOTSPOT-DEMO'],
     voltage: '4.21V (Li-ion)',
@@ -66,7 +66,7 @@ const MOCK_DEVICES: Device[] = [
     esp32Heap: '284 KB Free / 520 KB Total',
     fingerprintStatus: 'DY50 Optical Sensor Ready',
     cameraStatus: 'ESP32-CAM Standby',
-    keypadStatus: '4x4 Matrix Active',
+    keypadStatus: '4x4 Matrix Active (0-9 + A-D)',
     lcdStatus: '16x2 I2C LCD Ready',
     lcdText: ['** ATTENDX LIB **', 'Place Finger/PIN', 'Battery: 88%', 'Net: LIB-WIFI-5G'],
     voltage: '3.98V (Li-ion)',
@@ -82,11 +82,11 @@ const generateMockAttendance = (): AttendanceRecord[] => {
   const today = now.toISOString().split('T')[0];
 
   const times = [
-    { u: 'USR002', h: 8, m: 24, mode: 'fingerprint' as const, status: 'Present' as const, late: 0 },
-    { u: 'USR004', h: 8, m: 35, mode: 'fingerprint' as const, status: 'Present' as const, late: 0 },
-    { u: 'USR001', h: 8, m: 52, mode: 'fingerprint' as const, status: 'Present' as const, late: 0 },
-    { u: 'USR005', h: 9, m: 8, mode: 'pin' as const, status: 'Late' as const, late: 8 },
-    { u: 'USR003', h: 9, m: 19, mode: 'pin' as const, status: 'Late' as const, late: 19 }
+    { u: '002B', h: 8, m: 24, mode: 'fingerprint' as const, status: 'Present' as const, late: 0 },
+    { u: '004B', h: 8, m: 35, mode: 'fingerprint' as const, status: 'Present' as const, late: 0 },
+    { u: '001A', h: 8, m: 52, mode: 'fingerprint' as const, status: 'Present' as const, late: 0 },
+    { u: '005A', h: 9, m: 8, mode: 'pin' as const, status: 'Late' as const, late: 8 },
+    { u: '003A', h: 9, m: 19, mode: 'pin' as const, status: 'Late' as const, late: 19 }
   ];
 
   times.forEach((t, idx) => {
@@ -109,32 +109,29 @@ const generateMockAttendance = (): AttendanceRecord[] => {
   return records;
 };
 
-const MOCK_IMAGES: PINImage[] = [
-  {
-    id: 'SIM_IMG_01',
-    attendanceId: 'SIM_ATT_4',
-    userId: 'USR005',
-    captureTime: new Date(Date.now() - 3600000).toISOString(),
-    authMode: 'pin',
-    storageRef: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80'
-  },
-  {
-    id: 'SIM_IMG_02',
-    attendanceId: 'SIM_ATT_5',
-    userId: 'USR003',
-    captureTime: new Date(Date.now() - 1800000).toISOString(),
-    authMode: 'pin',
-    storageRef: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80'
-  }
-];
+const generateMockImages = (): PINImage[] => {
+  const now = new Date();
+  const d = new Date(now);
+  d.setHours(9, 19, 12);
+  return [
+    {
+      id: 'SIM_IMG_01',
+      attendanceId: 'SIM_ATT_5',
+      userId: '003A',
+      captureTime: d.toISOString(),
+      authMode: 'pin',
+      storageRef: '/demo-evidence.jpg'
+    }
+  ];
+};
 
 export function createInitialSimulationState(): SimulationState {
   return {
-    isSimulationMode: false,
-    users: MOCK_USERS,
-    devices: MOCK_DEVICES,
+    isSimulationMode: true,
+    users: [...MOCK_USERS],
+    devices: [...MOCK_DEVICES],
     attendance: generateMockAttendance(),
-    images: MOCK_IMAGES,
-    liveLogMessage: null
+    images: generateMockImages(),
+    liveLogMessage: 'System operating in SIMULATION MODE. Zero read/writes performed on Firestore.'
   };
 }

@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { 
   Search, Plus, MoreVertical, Fingerprint, Hash, X, 
   ChevronLeft, ChevronRight, UserCheck, UserX, 
-  Edit, Trash2, Eye, KeyRound, CheckCircle2, AlertCircle, RefreshCw 
+  Edit, Trash2, Eye, KeyRound, CheckCircle2, AlertCircle, RefreshCw,
+  HardDrive, Radio, Layers, Clock, Cpu
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useSystemMode } from '@/context/SystemModeContext'
@@ -38,7 +39,23 @@ export default function UsersPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [newName, setNewName] = useState("")
   const [newRole, setNewRole] = useState<"Student" | "Staff" | "Admin">("Student")
+  const [newUserId, setNewUserId] = useState("")
+  const [userIdError, setUserIdError] = useState("")
   const [isAdding, setIsAdding] = useState(false)
+
+  const getSuggestedKeypadId = (role: "Student" | "Staff" | "Admin", userList: UserItem[]) => {
+    let maxNum = 0;
+    for (const u of userList) {
+      const match = u.id.match(/^0*(\d+)[A-Za-z]?$/i) || u.id.match(/(\d+)/);
+      if (match && match[1]) {
+        const num = parseInt(match[1], 10);
+        if (!isNaN(num) && num > maxNum) maxNum = num;
+      }
+    }
+    const nextNum = maxNum + 1;
+    const suffix = role === 'Staff' ? 'B' : role === 'Admin' ? 'C' : 'A';
+    return `${String(nextNum).padStart(3, '0')}${suffix}`;
+  };
   
   // Actions Dropdown & Modals
   const [openDropdown, setOpenDropdown] = useState<string | null>(null)
@@ -57,10 +74,15 @@ export default function UsersPage() {
     }, 3500)
   }
 
-  // Fingerprint Enrollment Modal
+  // Live Terminal Fingerprint Enrollment Modal
   const [enrollFpUser, setEnrollFpUser] = useState<UserItem | null>(null)
-  const [fpEnrollStep, setFpEnrollStep] = useState<'prompt' | 'scanning' | 'verifying' | 'success'>('prompt')
-  const [isEnrollingFp, setIsEnrollingFp] = useState(false)
+  const [terminals, setTerminals] = useState<Array<{ id: string; name?: string; status: string; freeSlots?: number }>>([])
+  const [selectedTerminalId, setSelectedTerminalId] = useState<string>('DEV_TERM_01')
+  const [targetSlot, setTargetSlot] = useState<number>(1)
+  const [fpEnrollStatus, setFpEnrollStatus] = useState<'IDLE' | 'ARMING' | 'PENDING_TERMINAL_PICKUP' | 'WAITING_FOR_FINGER' | 'SUCCESS' | 'FAILED'>('IDLE')
+  const [fpStatusMsg, setFpStatusMsg] = useState<string>('')
+  const [fpFailureReason, setFpFailureReason] = useState<string>('')
+  const [elapsedSeconds, setElapsedSeconds] = useState<number>(0)
 
   // PIN Management Modal
   const [pinUser, setPinUser] = useState<UserItem | null>(null)
@@ -88,6 +110,21 @@ export default function UsersPage() {
         setLoading(false)
       })
   }, [isSimulationMode])
+
+  // Fetch terminals for enrollment
+  useEffect(() => {
+    fetch('/api/devices')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setTerminals(data)
+          if (data.length > 0 && !selectedTerminalId) {
+            setSelectedTerminalId(data[0].id)
+          }
+        }
+      })
+      .catch(console.error)
+  }, [selectedTerminalId])
 
   useEffect(() => {
     let active = true
@@ -120,27 +157,181 @@ export default function UsersPage() {
       }))
     : users
 
+  const handleOpenEnrollModal = async (user: UserItem) => {
+    setEnrollFpUser(user)
+    setFpEnrollStatus('IDLE')
+    setFpStatusMsg('')
+    setFpFailureReason('')
+    setElapsedSeconds(0)
+
+    try {
+      const res = await fetch(`/api/devices/enrollment?deviceId=${encodeURIComponent(selectedTerminalId || 'DEV_TERM_01')}`)
+      const data = await res.json()
+      if (data && data.totalEnrolledInDb !== undefined) {
+        setTargetSlot(data.totalEnrolledInDb + 1)
+      } else {
+        setTargetSlot(1)
+      }
+    } catch {
+      setTargetSlot(1)
+    }
+  }
+
+  const handleDispatchEnrollCommand = async () => {
+    if (!enrollFpUser) return
+    const targetId = enrollFpUser.id
+    const targetName = enrollFpUser.name
+    const targetDev = selectedTerminalId || 'DEV_TERM_01'
+
+    setFpEnrollStatus('ARMING')
+    setFpStatusMsg(`Queuing enrollment command for terminal ${targetDev}...`)
+    setFpFailureReason('')
+    setElapsedSeconds(0)
+
+    if (isSimulationMode) {
+      setTimeout(() => {
+        setFpEnrollStatus('WAITING_FOR_FINGER')
+        setFpStatusMsg(`[SIMULATION] Terminal armed for ${targetName}. Place finger on sensor twice (Slot #${targetSlot})...`)
+        setTimeout(() => {
+          setFpEnrollStatus('SUCCESS')
+          setFpStatusMsg(`[SIMULATION] Confirmed! Enrolled fingerprint for ${targetName} into Slot #${targetSlot}.`)
+          setUsers(prev => prev.map(u => u.id === targetId ? { ...u, hasFingerprint: true } : u))
+          showNotification(`[SIMULATION] Fingerprint enrolled for ${targetName}.`)
+        }, 2000)
+      }, 1000)
+      return
+    }
+
+    try {
+      const armRes = await fetch('/api/devices/enrollment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'QUEUE_ENROLLMENT',
+          deviceId: targetDev,
+          userId: targetId,
+          slotNumber: Number(targetSlot)
+        })
+      })
+
+      if (!armRes.ok) {
+        throw new Error('Failed to queue terminal enrollment command.')
+      }
+
+      const armData = await armRes.json()
+      const currentJobId = armData.job?.jobId
+
+      setFpEnrollStatus('PENDING_TERMINAL_PICKUP')
+      setFpStatusMsg(`Command queued in Firestore! Waiting for terminal ${targetDev} to fetch command on next heartbeat...`)
+
+      const startTime = Date.now()
+      const timerInterval = setInterval(() => {
+        setElapsedSeconds(Math.floor((Date.now() - startTime) / 1000))
+      }, 1000)
+
+      let attempts = 0
+      const maxAttempts = 45 // 90s timeout (every 2s)
+      const pollInterval = setInterval(async () => {
+        attempts++
+        try {
+          const pollRes = await fetch(`/api/devices/enrollment?jobId=${currentJobId}&deviceId=${encodeURIComponent(targetDev)}`)
+          if (pollRes.ok) {
+            const pollData = await pollRes.json()
+
+            if (pollData.status === 'PENDING_SCAN' || pollData.status === 'SCANNING' || pollData.status === 'EXECUTING') {
+              setFpEnrollStatus('WAITING_FOR_FINGER')
+              setFpStatusMsg(`Terminal armed & active! Waiting for ${targetName} to place finger twice on DY50 optical sensor (Slot #${targetSlot})...`)
+            } else if (pollData.status === 'COMPLETED' || pollData.status === 'SUCCESS') {
+              clearInterval(pollInterval)
+              clearInterval(timerInterval)
+              setFpEnrollStatus('SUCCESS')
+              setFpStatusMsg(`Hardware confirmed! Successfully registered fingerprint for ${targetName} in Slot #${targetSlot}!`)
+              setUsers(prev => prev.map(u => u.id === targetId ? { ...u, hasFingerprint: true } : u))
+              showNotification(`Fingerprint registered for ${targetName} on terminal ${targetDev}.`)
+              fetchUsers()
+              return
+            } else if (pollData.status === 'FAILED' || pollData.status === 'ERROR') {
+              clearInterval(pollInterval)
+              clearInterval(timerInterval)
+              setFpEnrollStatus('FAILED')
+              setFpFailureReason(pollData.job?.reason || pollData.reason || 'Terminal reported scan failure or sensor timeout.')
+              return
+            }
+          }
+        } catch {
+          // Continue polling
+        }
+
+        if (attempts >= maxAttempts) {
+          clearInterval(pollInterval)
+          clearInterval(timerInterval)
+          setFpEnrollStatus('FAILED')
+          setFpFailureReason('Enrollment timed out: No hardware scan completion received after 90 seconds. Ensure ESP32 is powered on and finger placed firmly twice.')
+        }
+      }, 2000)
+
+    } catch (err: unknown) {
+      setFpEnrollStatus('FAILED')
+      setFpFailureReason(err instanceof Error ? err.message : 'Error dispatching enrollment command')
+    }
+  }
+
   const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newName.trim()) return
+
+    const cleanId = (newUserId || getSuggestedKeypadId(newRole, displayedUsers)).trim().toUpperCase()
+    if (!/^[0-9]+[A-Za-z]$/.test(cleanId)) {
+      setUserIdError("User ID must start with 0-9 numeric digits and end with a single letter (e.g. 001A, 102B)")
+      return
+    }
+
     setIsAdding(true)
     const addingName = newName.trim()
     const addingRole = newRole
+
+    if (isSimulationMode) {
+      const newSimUser: UserItem = {
+        id: cleanId,
+        name: addingName,
+        role: addingRole,
+        status: 'Active',
+        dateRegistered: new Date().toISOString(),
+        totalAttendance: 0,
+        lateOccurrences: 0,
+        hasFingerprint: false,
+        hasPin: false
+      }
+      simState.users.unshift(newSimUser)
+      showNotification(`[SIMULATION] User ${addingName} (${cleanId}) registered successfully.`)
+      setIsModalOpen(false)
+      setNewName("")
+      setNewUserId("")
+      setIsAdding(false)
+      return
+    }
+
     try {
       const res = await fetch('/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: addingName, role: addingRole })
+        body: JSON.stringify({ id: cleanId, name: addingName, role: addingRole })
       })
       const created = await res.json()
+      if (!res.ok) {
+        showNotification(created?.error || "Failed to add user.", "error")
+        return
+      }
+
       if (created && created.id) {
         setUsers(prev => [created, ...prev])
-        showNotification(`User ${created.name} added successfully.`)
+        showNotification(`User ${created.name} (${created.id}) added successfully.`)
       } else {
         showNotification(`User ${addingName} created.`)
       }
       setIsModalOpen(false)
       setNewName("")
+      setNewUserId("")
       setNewRole("Student")
       fetchUsers()
     } catch (err) {
@@ -177,7 +368,6 @@ export default function UsersPage() {
     const updatedStatus = editStatus
 
     setIsSavingEdit(true)
-    // Instant optimistic update in local state
     setUsers(prev => prev.map(u => u.id === targetId ? {
       ...u,
       name: updatedName,
@@ -209,37 +399,6 @@ export default function UsersPage() {
     }
   }
 
-  const handleStartFpEnrollment = () => {
-    if (!enrollFpUser) return
-    const targetId = enrollFpUser.id
-    const targetName = enrollFpUser.name
-
-    setIsEnrollingFp(true)
-    setFpEnrollStep('scanning')
-    setTimeout(() => {
-      setFpEnrollStep('verifying')
-      setTimeout(async () => {
-        try {
-          // Optimistically update fingerprint badge
-          setUsers(prev => prev.map(u => u.id === targetId ? { ...u, hasFingerprint: true } : u))
-          await fetch(`/api/users/${targetId}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ enrollFingerprint: true })
-          })
-          setFpEnrollStep('success')
-          showNotification(`Fingerprint registered for ${targetName} on DY50 sensor.`)
-          fetchUsers()
-        } catch (err) {
-          console.error(err)
-          showNotification("Failed to save fingerprint template.", "error")
-        } finally {
-          setIsEnrollingFp(false)
-        }
-      }, 1200)
-    }, 1200)
-  }
-
   const handleSavePin = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!pinUser) return
@@ -257,7 +416,6 @@ export default function UsersPage() {
     setIsSavingPin(true)
     setPinError("")
 
-    // Optimistically update PIN badge
     setUsers(prev => prev.map(u => u.id === targetId ? { ...u, hasPin: true } : u))
     setPinUser(null)
     showNotification(`Keypad PIN configured for ${targetName}.`)
@@ -286,7 +444,6 @@ export default function UsersPage() {
     const targetName = deletingUser.name
 
     setIsDeleting(true)
-    // Instant optimistic removal from UI
     setUsers(prev => prev.filter(u => u.id !== targetId))
     setDeletingUser(null)
     showNotification(`User ${targetName} deleted permanently.`)
@@ -314,7 +471,6 @@ export default function UsersPage() {
     return matchesSearch && matchesRole && matchesStatus
   })
 
-  // Pagination calculations
   const totalPages = Math.max(1, Math.ceil(filteredUsers.length / pageSize))
   const paginatedUsers = filteredUsers.slice((currentPage - 1) * pageSize, currentPage * pageSize)
   const startIndex = filteredUsers.length === 0 ? 0 : (currentPage - 1) * pageSize + 1
@@ -328,7 +484,12 @@ export default function UsersPage() {
           <p className="text-sm text-slate-500 mt-1">Manage students, staff, hardware credentials, and authentication methods.</p>
         </div>
         <button 
-          onClick={() => setIsModalOpen(true)}
+          onClick={() => {
+            const suggested = getSuggestedKeypadId(newRole, displayedUsers);
+            setNewUserId(suggested);
+            setUserIdError("");
+            setIsModalOpen(true);
+          }}
           className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors bg-blue-600 text-white hover:bg-blue-700 h-10 px-4 py-2 shadow-sm"
         >
           <Plus className="w-4 h-4 mr-2" /> Add User
@@ -403,7 +564,12 @@ export default function UsersPage() {
                   <td className="px-6 py-4">
                     <div className="flex flex-col">
                       <span className="font-semibold text-slate-900">{user.name}</span>
-                      <span className="text-xs font-mono text-slate-500 mt-0.5">{user.id}</span>
+                      <div className="flex items-center space-x-1.5 mt-0.5">
+                        <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[11px] font-mono font-bold bg-slate-100 text-slate-700 border border-slate-200" title="Keypad User ID">
+                          {user.id}
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-medium">Keypad ID</span>
+                      </div>
                     </div>
                   </td>
                   <td className="px-6 py-4">
@@ -459,7 +625,6 @@ export default function UsersPage() {
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end space-x-1 relative">
-                      {/* Quick Edit button */}
                       <button 
                         type="button"
                         onClick={(e) => {
@@ -476,7 +641,6 @@ export default function UsersPage() {
                         <Edit className="w-4 h-4" />
                       </button>
 
-                      {/* Quick Delete button */}
                       <button 
                         type="button"
                         onClick={(e) => {
@@ -490,7 +654,6 @@ export default function UsersPage() {
                         <Trash2 className="w-4 h-4" />
                       </button>
 
-                      {/* Ellipsis / More Actions button */}
                       <button 
                         type="button"
                         onClick={(e) => { 
@@ -510,17 +673,16 @@ export default function UsersPage() {
                         <MoreVertical className="w-4 h-4" />
                       </button>
 
-                      {/* Fully Functional Dropdown Menu */}
                       {openDropdown === user.id && (
                         <div 
                           onClick={(e) => e.stopPropagation()} 
                           className={cn(
-                            "absolute right-0 w-60 bg-white border border-slate-200 rounded-xl shadow-2xl z-50 py-1.5 text-left text-xs divide-y divide-slate-100 animate-in fade-in zoom-in-95 duration-100",
+                            "absolute right-0 w-64 bg-white border border-slate-200 rounded-xl shadow-2xl z-50 py-1.5 text-left text-xs divide-y divide-slate-100 animate-in fade-in zoom-in-95 duration-100",
                             index >= 3 ? "bottom-full mb-2" : "top-full mt-2"
                           )}
                         >
                           <div className="px-3.5 py-1.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-                            Actions: {user.name}
+                            Actions: {user.name} ({user.id})
                           </div>
                           
                           <div className="py-1">
@@ -552,14 +714,13 @@ export default function UsersPage() {
                             <button 
                               type="button"
                               onClick={() => {
-                                setEnrollFpUser(user);
-                                setFpEnrollStep('prompt');
                                 setOpenDropdown(null);
+                                handleOpenEnrollModal(user);
                               }}
-                              className="w-full px-3.5 py-2 text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 flex items-center space-x-2.5 transition-colors"
+                              className="w-full px-3.5 py-2 text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 flex items-center space-x-2.5 transition-colors font-medium"
                             >
                               <Fingerprint className="w-4 h-4 text-emerald-600" />
-                              <span className="font-medium text-xs">{user.hasFingerprint ? 'Re-enroll Fingerprint (DY50)' : 'Enroll Fingerprint (DY50)'}</span>
+                              <span className="text-xs">{user.hasFingerprint ? 'Re-enroll to Terminal (DY50)' : 'Enroll to Terminal (DY50)'}</span>
                             </button>
                             <button 
                               type="button"
@@ -679,7 +840,7 @@ export default function UsersPage() {
             <CardContent className="pt-6">
               <form onSubmit={handleAddUser} className="space-y-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-slate-700">Full Name</label>
+                  <label className="text-xs font-semibold text-slate-700">Full Name</label>
                   <input 
                     type="text" 
                     required
@@ -690,17 +851,105 @@ export default function UsersPage() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-slate-700">Role Classification</label>
+                  <label className="text-xs font-semibold text-slate-700">Role Classification</label>
                   <select 
                     value={newRole}
-                    onChange={(e) => setNewRole(e.target.value as "Student" | "Staff" | "Admin")}
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    onChange={(e) => {
+                      const updatedRole = e.target.value as "Student" | "Staff" | "Admin";
+                      setNewRole(updatedRole);
+                      const suggested = getSuggestedKeypadId(updatedRole, displayedUsers);
+                      setNewUserId(suggested);
+                      setUserIdError("");
+                    }}
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white font-medium"
                   >
-                    <option value="Student">Student</option>
-                    <option value="Staff">Staff</option>
-                    <option value="Admin">Admin</option>
+                    <option value="Student">Student (Keypad Suffix [A])</option>
+                    <option value="Staff">Staff (Keypad Suffix [B])</option>
+                    <option value="Admin">Admin (Keypad Suffix [C])</option>
                   </select>
                 </div>
+                
+                {/* Keypad User ID Configuration */}
+                <div className="space-y-1.5 p-3.5 bg-slate-50 rounded-lg border border-slate-200">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-800 flex items-center">
+                      <Hash className="w-3.5 h-3.5 mr-1 text-blue-600" /> Keypad User ID
+                    </label>
+                    <span className="text-[11px] text-slate-500 font-mono">Digits 0-9 + Letter</span>
+                  </div>
+                  <input 
+                    type="text" 
+                    required
+                    placeholder="e.g., 001A, 102B" 
+                    value={newUserId}
+                    onChange={(e) => {
+                      const val = e.target.value.toUpperCase();
+                      setNewUserId(val);
+                      if (val && !/^[0-9]+[A-Za-z]$/.test(val)) {
+                        setUserIdError("Must start with 0-9 numeric digits and end with a single letter (e.g. 001A)");
+                      } else {
+                        setUserIdError("");
+                      }
+                    }}
+                    className={cn(
+                      "w-full px-3 py-2 text-sm font-mono font-bold tracking-wide border rounded-md focus:outline-none focus:ring-2",
+                      userIdError ? "border-red-300 focus:ring-red-500 bg-red-50/30 text-red-900" : "border-slate-300 focus:ring-blue-500 bg-white text-slate-900"
+                    )}
+                  />
+
+                  {/* Keypad letter quick selector */}
+                  <div className="flex items-center space-x-1.5 pt-1">
+                    <span className="text-[11px] font-medium text-slate-500">Keypad Key:</span>
+                    {['A', 'B', 'C', 'D'].map(letter => {
+                      const numPart = newUserId.replace(/[^0-9]/g, '') || '001';
+                      const isSelected = newUserId.endsWith(letter);
+                      return (
+                        <button
+                          key={letter}
+                          type="button"
+                          onClick={() => {
+                            const next = `${numPart}${letter}`;
+                            setNewUserId(next);
+                            setUserIdError("");
+                          }}
+                          className={cn(
+                            "px-2 py-0.5 text-xs font-mono font-bold rounded border transition-all",
+                            isSelected 
+                              ? "bg-blue-600 text-white border-blue-600 shadow-xs scale-105" 
+                              : "bg-white text-slate-700 border-slate-300 hover:bg-slate-100"
+                          )}
+                          title={`4x4 Matrix Keypad [${letter}]`}
+                        >
+                          [{letter}]
+                        </button>
+                      );
+                    })}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const suggested = getSuggestedKeypadId(newRole, displayedUsers);
+                        setNewUserId(suggested);
+                        setUserIdError("");
+                      }}
+                      className="text-[11px] text-blue-600 hover:text-blue-800 ml-auto font-medium underline"
+                    >
+                      Reset Next ID
+                    </button>
+                  </div>
+
+                  {userIdError ? (
+                    <p className="text-[11px] text-red-600 flex items-center mt-1 font-medium">
+                      <AlertCircle className="w-3 h-3 mr-1 flex-shrink-0" />
+                      {userIdError}
+                    </p>
+                  ) : (
+                    <p className="text-[11px] text-emerald-700 flex items-center mt-1">
+                      <CheckCircle2 className="w-3 h-3 mr-1 text-emerald-600 flex-shrink-0" />
+                      Compatible with hardware 4x4 matrix keypad input (0-9 + A/B/C/D)
+                    </p>
+                  )}
+                </div>
+
                 <div className="flex justify-end space-x-2 pt-4">
                   <button 
                     type="button" 
@@ -753,42 +1002,20 @@ export default function UsersPage() {
                 <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
                   <span className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Registration Date</span>
                   <p className="text-sm font-semibold text-slate-800 mt-1">
-                    {new Date(viewingUser.dateRegistered).toLocaleDateString()}
+                    {new Date(viewingUser.dateRegistered).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                   </p>
                 </div>
               </div>
 
-              <div className="border border-slate-200 rounded-lg p-4 space-y-3">
-                <h4 className="text-xs font-bold text-slate-600 uppercase tracking-wider">Attendance Metrics</h4>
-                <div className="grid grid-cols-3 gap-2 text-center">
-                  <div className="bg-slate-50 p-2.5 rounded border border-slate-100">
-                    <p className="text-xs text-slate-500">Total Check-Ins</p>
-                    <p className="text-lg font-bold text-slate-900 mt-0.5">{viewingUser.totalAttendance}</p>
-                  </div>
-                  <div className="bg-slate-50 p-2.5 rounded border border-slate-100">
-                    <p className="text-xs text-slate-500">Late Arrivals</p>
-                    <p className="text-lg font-bold text-amber-600 mt-0.5">{viewingUser.lateOccurrences}</p>
-                  </div>
-                  <div className="bg-slate-50 p-2.5 rounded border border-slate-100">
-                    <p className="text-xs text-slate-500">Punctuality</p>
-                    <p className="text-lg font-bold text-emerald-600 mt-0.5">
-                      {viewingUser.totalAttendance > 0 
-                        ? `${Math.round(((viewingUser.totalAttendance - viewingUser.lateOccurrences) / viewingUser.totalAttendance) * 100)}%`
-                        : '100%'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="border border-slate-200 rounded-lg p-4 space-y-3">
-                <h4 className="text-xs font-bold text-slate-600 uppercase tracking-wider">Hardware Credentials</h4>
-                <div className="space-y-2">
+              <div>
+                <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-3">Authentication Credentials</h4>
+                <div className="space-y-2.5">
                   <div className="flex items-center justify-between p-2.5 bg-slate-50 rounded border border-slate-100">
                     <div className="flex items-center space-x-2.5">
                       <Fingerprint className={cn("w-4 h-4", viewingUser.hasFingerprint ? "text-emerald-600" : "text-slate-400")} />
                       <div>
-                        <p className="text-xs font-semibold text-slate-800">DY50 Fingerprint</p>
-                        <p className="text-[11px] text-slate-500">Primary biometric verification</p>
+                        <p className="text-xs font-semibold text-slate-800">Biometric DY50 Fingerprint</p>
+                        <p className="text-[11px] text-slate-500">Optical sensor enrollment</p>
                       </div>
                     </div>
                     <span className={cn(
@@ -897,69 +1124,161 @@ export default function UsersPage() {
         </div>
       )}
 
-      {/* Fingerprint Enrollment Terminal Simulation Modal */}
+      {/* Live Fingerprint Terminal Enrollment Modal */}
       {enrollFpUser && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <Card className="w-full max-w-md shadow-xl border-slate-200">
-            <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 pb-4">
-              <div className="flex items-center space-x-2">
-                <Fingerprint className="w-5 h-5 text-emerald-600" />
-                <CardTitle className="text-base font-bold">DY50 Sensor Enrollment</CardTitle>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
+          <Card className="w-full max-w-lg shadow-2xl border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 pb-4 bg-slate-50/80">
+              <div className="flex items-center space-x-3">
+                <div className="p-2.5 bg-emerald-600 text-white rounded-lg">
+                  <Fingerprint className="w-6 h-6" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg font-bold text-slate-900">
+                    Send Enrollment to Terminal
+                  </CardTitle>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    User: <strong className="text-slate-800">{enrollFpUser.name}</strong> • Keypad ID: <span className="font-mono font-bold text-blue-700">{enrollFpUser.id}</span>
+                  </p>
+                </div>
               </div>
-              <button onClick={() => setEnrollFpUser(null)} className="text-slate-400 hover:text-slate-600 p-1">
+              <button 
+                onClick={() => setEnrollFpUser(null)} 
+                className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-200 transition-colors"
+              >
                 <X className="w-5 h-5" />
               </button>
             </CardHeader>
-            <CardContent className="pt-6 space-y-5 text-center">
-              <p className="text-xs text-slate-500">
-                Enrolling biometric fingerprint for <strong className="text-slate-800">{enrollFpUser.name}</strong> ({enrollFpUser.id}) via connected ESP32 terminal.
-              </p>
 
-              {/* Terminal scan visual box */}
-              <div className="py-8 bg-slate-900 rounded-xl border border-slate-800 text-white relative overflow-hidden flex flex-col items-center justify-center space-y-3">
-                <div className={cn(
-                  "p-4 rounded-full border-2 transition-all duration-300",
-                  fpEnrollStep === 'prompt' && "border-emerald-500/50 bg-emerald-950/40 text-emerald-400 animate-pulse",
-                  fpEnrollStep === 'scanning' && "border-blue-500 bg-blue-950/50 text-blue-400",
-                  fpEnrollStep === 'verifying' && "border-purple-500 bg-purple-950/50 text-purple-400",
-                  fpEnrollStep === 'success' && "border-emerald-500 bg-emerald-900/60 text-emerald-300"
-                )}>
-                  {fpEnrollStep === 'success' ? (
-                    <CheckCircle2 className="w-10 h-10 text-emerald-400" />
-                  ) : (
-                    <Fingerprint className="w-10 h-10" />
+            <CardContent className="p-6 space-y-6">
+              {/* Configuration Section (Terminal & Auto-Assigned Slot) */}
+              {fpEnrollStatus === 'IDLE' && (
+                <div className="space-y-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center">
+                      <HardDrive className="w-3.5 h-3.5 mr-1 text-slate-500" /> Target Hardware Terminal
+                    </label>
+                    <select
+                      value={selectedTerminalId}
+                      onChange={(e) => setSelectedTerminalId(e.target.value)}
+                      className="w-full px-3 py-2.5 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white font-medium"
+                    >
+                      {terminals.length > 0 ? (
+                        terminals.map(term => (
+                          <option key={term.id} value={term.id}>
+                            {term.name || term.id} ({term.id}) - [{term.status}]
+                          </option>
+                        ))
+                      ) : (
+                        <option value="DEV_TERM_01">DEV_TERM_01 - Main Campus Terminal A (ONLINE)</option>
+                      )}
+                    </select>
+                  </div>
+
+                  {/* Auto-Assigned Slot Info */}
+                  <div className="p-4 bg-emerald-50/70 border border-emerald-200 rounded-xl space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-emerald-900 uppercase tracking-wider flex items-center">
+                        <Layers className="w-4 h-4 mr-1.5 text-emerald-600" /> Auto-Allocated EEPROM Slot
+                      </span>
+                      <span className="px-2.5 py-1 bg-emerald-600 text-white rounded-md text-xs font-mono font-bold shadow-xs">
+                        Slot #{targetSlot}
+                      </span>
+                    </div>
+                    <p className="text-xs text-emerald-800 leading-relaxed">
+                      The firmware backend automatically coordinates available DY50 optical slots. When dispatched, terminal <strong className="font-mono">{selectedTerminalId}</strong> will arm and save this user&apos;s biometric template into <strong>Slot #{targetSlot}</strong>.
+                    </p>
+                  </div>
+
+                  {/* Instructions preview */}
+                  <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-600 space-y-1.5">
+                    <p className="font-semibold text-slate-800 flex items-center">
+                      <Cpu className="w-3.5 h-3.5 mr-1.5 text-slate-600" /> Hardware Handshake Sequence:
+                    </p>
+                    <ol className="list-decimal pl-4 space-y-1 text-slate-500">
+                      <li>Dashboard queues command into central Firestore <code className="font-mono text-slate-700">commands</code>.</li>
+                      <li>ESP32 terminal picks up command on next telemetry packet and displays <code className="font-mono text-slate-700">** ENROLL MODE **</code>.</li>
+                      <li>User places finger twice on optical glass; sensor captures 500 DPI ridge map.</li>
+                      <li>Terminal posts verified template confirmation to backend.</li>
+                    </ol>
+                  </div>
+                </div>
+              )}
+
+              {/* Progress & Live Terminal Telemetry Monitor */}
+              {fpEnrollStatus !== 'IDLE' && (
+                <div className="py-6 px-4 bg-slate-900 rounded-xl border border-slate-800 text-white relative overflow-hidden flex flex-col items-center justify-center space-y-4">
+                  <div className={cn(
+                    "p-5 rounded-full border-2 transition-all duration-300",
+                    fpEnrollStatus === 'ARMING' && "border-blue-500/50 bg-blue-950/40 text-blue-400 animate-pulse",
+                    fpEnrollStatus === 'PENDING_TERMINAL_PICKUP' && "border-amber-500/50 bg-amber-950/40 text-amber-400 animate-pulse",
+                    fpEnrollStatus === 'WAITING_FOR_FINGER' && "border-emerald-500/50 bg-emerald-950/40 text-emerald-400 animate-bounce",
+                    fpEnrollStatus === 'SUCCESS' && "border-emerald-500 bg-emerald-900/60 text-emerald-300",
+                    fpEnrollStatus === 'FAILED' && "border-red-500 bg-red-950/50 text-red-400"
+                  )}>
+                    {fpEnrollStatus === 'SUCCESS' ? (
+                      <CheckCircle2 className="w-12 h-12 text-emerald-400" />
+                    ) : fpEnrollStatus === 'FAILED' ? (
+                      <AlertCircle className="w-12 h-12 text-red-400" />
+                    ) : (
+                      <Fingerprint className="w-12 h-12" />
+                    )}
+                  </div>
+
+                  <div className="space-y-1 text-center max-w-sm px-2">
+                    <p className="text-sm font-bold text-emerald-300">
+                      {fpEnrollStatus === 'ARMING' && "Arming Terminal..."}
+                      {fpEnrollStatus === 'PENDING_TERMINAL_PICKUP' && "Command Dispatched — Awaiting Terminal Heartbeat..."}
+                      {fpEnrollStatus === 'WAITING_FOR_FINGER' && "Sensor Armed: Place Finger Twice on Sensor"}
+                      {fpEnrollStatus === 'SUCCESS' && "Biometric Enrollment Verified & Stored!"}
+                      {fpEnrollStatus === 'FAILED' && "Enrollment Failure"}
+                    </p>
+                    <p className="text-xs text-slate-300">
+                      {fpStatusMsg}
+                    </p>
+                    {fpFailureReason && (
+                      <p className="text-xs text-red-300 bg-red-950/80 p-2 rounded mt-2 border border-red-800">
+                        {fpFailureReason}
+                      </p>
+                    )}
+                  </div>
+
+                  {fpEnrollStatus !== 'SUCCESS' && fpEnrollStatus !== 'FAILED' && (
+                    <div className="flex items-center space-x-2 text-[11px] font-mono text-slate-400">
+                      <Clock className="w-3.5 h-3.5 text-slate-400 animate-spin" />
+                      <span>Elapsed Time: {elapsedSeconds}s (Timeout: 90s)</span>
+                    </div>
                   )}
                 </div>
+              )}
 
-                <div className="space-y-1 px-4">
-                  <p className="text-sm font-semibold text-emerald-300">
-                    {fpEnrollStep === 'prompt' && "Ready: Place Finger on Terminal Sensor"}
-                    {fpEnrollStep === 'scanning' && "Capturing Optical 500 DPI Ridge Map..."}
-                    {fpEnrollStep === 'verifying' && "Validating Template & Writing to EEPROM..."}
-                    {fpEnrollStep === 'success' && "Enrollment Completed Successfully!"}
-                  </p>
-                  <p className="text-xs text-slate-400 font-mono">
-                    Terminal: DEV_TERM_01 • Sensor UART: 57600 baud
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex justify-end space-x-2 pt-2">
+              {/* Action Buttons */}
+              <div className="flex justify-end space-x-2 pt-2 border-t border-slate-100">
                 <button 
                   type="button" 
                   onClick={() => setEnrollFpUser(null)} 
-                  className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-md border border-slate-200"
+                  className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-md border border-slate-200 transition-colors"
                 >
-                  {fpEnrollStep === 'success' ? "Done" : "Cancel"}
+                  {fpEnrollStatus === 'SUCCESS' ? "Done" : "Cancel"}
                 </button>
-                {fpEnrollStep !== 'success' && (
+
+                {fpEnrollStatus === 'IDLE' && (
                   <button 
                     type="button" 
-                    disabled={isEnrollingFp}
-                    onClick={handleStartFpEnrollment}
-                    className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-md shadow-sm"
+                    onClick={handleDispatchEnrollCommand}
+                    className="px-5 py-2 text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-md shadow-sm transition-all flex items-center"
                   >
-                    {isEnrollingFp ? "Scanning Terminal..." : "Simulate Terminal Touch"}
+                    <Radio className="w-4 h-4 mr-2 animate-pulse" /> Dispatch Enroll Command
+                  </button>
+                )}
+
+                {fpEnrollStatus === 'FAILED' && (
+                  <button 
+                    type="button" 
+                    onClick={handleDispatchEnrollCommand}
+                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md shadow-sm"
+                  >
+                    Retry Enrollment
                   </button>
                 )}
               </div>
@@ -974,52 +1293,52 @@ export default function UsersPage() {
           <Card className="w-full max-w-md shadow-xl border-slate-200">
             <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 pb-4">
               <div className="flex items-center space-x-2">
-                <KeyRound className="w-5 h-5 text-blue-600" />
-                <CardTitle className="text-base font-bold">
-                  {pinUser.hasPin ? "Change Fallback PIN" : "Set Fallback PIN"}
-                </CardTitle>
+                <KeyRound className="w-5 h-5 text-indigo-600" />
+                <CardTitle className="text-base font-bold">Keypad Backup PIN</CardTitle>
               </div>
               <button onClick={() => setPinUser(null)} className="text-slate-400 hover:text-slate-600 p-1">
                 <X className="w-5 h-5" />
               </button>
             </CardHeader>
             <CardContent className="pt-6">
-              <p className="text-xs text-slate-500 mb-4">
-                Configure a secure 4-digit keypad PIN for <strong className="text-slate-800">{pinUser.name}</strong>. Used when fingerprint sensor fails, and triggers ESP-CAM photo capture.
-              </p>
-
-              {pinError && (
-                <div className="mb-4 p-2.5 bg-red-50 text-red-700 text-xs rounded border border-red-200 flex items-center space-x-2">
-                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                  <span>{pinError}</span>
-                </div>
-              )}
-
               <form onSubmit={handleSavePin} className="space-y-4">
+                <p className="text-xs text-slate-500">
+                  Configure a 4 to 6 digit backup numeric PIN for <strong className="text-slate-800">{pinUser.name}</strong> ({pinUser.id}) to punch on the 4x4 keypad matrix.
+                </p>
+
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-slate-700">New 4-Digit PIN</label>
+                  <label className="text-xs font-semibold text-slate-700">New Numeric PIN (4-6 digits)</label>
                   <input 
                     type="password" 
                     maxLength={6}
                     required
-                    placeholder="Enter 4-6 digits" 
+                    placeholder="Enter 4-6 digit PIN" 
                     value={pinValue}
-                    onChange={(e) => setPinValue(e.target.value)}
-                    className="w-full px-3 py-2 text-sm tracking-widest text-center font-mono border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    onChange={(e) => setPinValue(e.target.value.replace(/\D/g, ''))}
+                    className="w-full px-3 py-2 text-sm font-mono border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
+
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-slate-700">Confirm PIN</label>
+                  <label className="text-xs font-semibold text-slate-700">Confirm PIN</label>
                   <input 
                     type="password" 
                     maxLength={6}
                     required
-                    placeholder="Re-enter PIN" 
+                    placeholder="Confirm PIN" 
                     value={confirmPinValue}
-                    onChange={(e) => setConfirmPinValue(e.target.value)}
-                    className="w-full px-3 py-2 text-sm tracking-widest text-center font-mono border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    onChange={(e) => setConfirmPinValue(e.target.value.replace(/\D/g, ''))}
+                    className="w-full px-3 py-2 text-sm font-mono border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
+
+                {pinError && (
+                  <p className="text-xs text-red-600 flex items-center">
+                    <AlertCircle className="w-3.5 h-3.5 mr-1 flex-shrink-0" />
+                    {pinError}
+                  </p>
+                )}
+
                 <div className="flex justify-end space-x-2 pt-4">
                   <button 
                     type="button" 
@@ -1031,9 +1350,9 @@ export default function UsersPage() {
                   <button 
                     type="submit" 
                     disabled={isSavingPin}
-                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md shadow-sm"
+                    className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-md shadow-sm"
                   >
-                    {isSavingPin ? "Saving..." : "Save PIN"}
+                    {isSavingPin ? "Saving..." : "Save Keypad PIN"}
                   </button>
                 </div>
               </form>
@@ -1042,22 +1361,19 @@ export default function UsersPage() {
         </div>
       )}
 
-      {/* Delete User Confirmation Modal */}
+      {/* Delete User Modal */}
       {deletingUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <Card className="w-full max-w-md shadow-xl border-slate-200">
             <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 pb-4">
-              <CardTitle className="text-base font-bold text-red-600 flex items-center space-x-2">
-                <AlertCircle className="w-5 h-5 text-red-600" />
-                <span>Delete User</span>
-              </CardTitle>
+              <CardTitle className="text-base font-bold text-red-600">Delete User Account</CardTitle>
               <button onClick={() => setDeletingUser(null)} className="text-slate-400 hover:text-slate-600 p-1">
                 <X className="w-5 h-5" />
               </button>
             </CardHeader>
             <CardContent className="pt-6 space-y-4">
               <p className="text-sm text-slate-600">
-                Are you sure you want to permanently remove <strong className="text-slate-900">{deletingUser.name}</strong> ({deletingUser.id})? All associated biometric fingerprints and authentication credentials will be deleted.
+                Are you sure you want to permanently delete <strong className="text-slate-900">{deletingUser.name}</strong> (<span className="font-mono text-xs">{deletingUser.id}</span>)? This will remove all associated attendance records and biometric fingerprint mappings.
               </p>
               <div className="flex justify-end space-x-2 pt-2">
                 <button 
@@ -1071,10 +1387,9 @@ export default function UsersPage() {
                   type="button" 
                   disabled={isDeleting}
                   onClick={handleDeleteUser}
-                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md shadow-sm flex items-center space-x-1.5"
+                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md shadow-sm"
                 >
-                  {isDeleting && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
-                  <span>{isDeleting ? "Deleting..." : "Confirm Delete"}</span>
+                  {isDeleting ? "Deleting..." : "Delete Permanently"}
                 </button>
               </div>
             </CardContent>
@@ -1082,27 +1397,14 @@ export default function UsersPage() {
         </div>
       )}
 
-      {/* Floating Notification Toast */}
+      {/* Toast Notification */}
       {notification && (
         <div className={cn(
-          "fixed bottom-6 right-6 z-[100] px-4 py-3 rounded-lg shadow-2xl text-sm font-medium flex items-center space-x-2.5 animate-in fade-in slide-in-from-bottom-3 duration-200 border",
-          notification.type === 'success' 
-            ? "bg-slate-900 text-white border-slate-700" 
-            : "bg-red-600 text-white border-red-700"
+          "fixed bottom-6 right-6 z-50 px-4 py-3 rounded-lg shadow-lg border text-sm flex items-center space-x-2 animate-in slide-in-from-bottom-5 duration-200",
+          notification.type === 'success' ? "bg-emerald-600 text-white border-emerald-500" : "bg-red-600 text-white border-red-500"
         )}>
-          {notification.type === 'success' ? (
-            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-          ) : (
-            <AlertCircle className="w-4 h-4 text-white shrink-0" />
-          )}
+          {notification.type === 'success' ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
           <span>{notification.message}</span>
-          <button 
-            type="button"
-            onClick={() => setNotification(null)} 
-            className="ml-2 text-slate-400 hover:text-white p-0.5 rounded transition-colors"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
         </div>
       )}
     </div>

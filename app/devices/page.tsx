@@ -1,5 +1,6 @@
 "use client"
 import { useEffect, useState, useCallback } from 'react'
+import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { 
   HardDrive, Wifi, WifiOff, Battery, Plug, Activity, Clock, 
@@ -12,11 +13,25 @@ import { Device } from '@/types'
 import { EnrollFingerprintModal } from '@/components/devices/EnrollFingerprintModal'
 import { ConfigureTerminalModal } from '@/components/devices/ConfigureTerminalModal'
 import { useSystemMode } from '@/context/SystemModeContext'
+import { generateContractPdf } from '@/lib/generateContractPdf'
 
 export default function DevicesPage() {
   const [devices, setDevices] = useState<Device[]>([])
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const [downloadingPdf, setDownloadingPdf] = useState(false)
+
+  const handleDownloadBlueprintPdf = () => {
+    setDownloadingPdf(true)
+    try {
+      const doc = generateContractPdf()
+      doc.save('AttendX_Firmware_Backend_Handshake_Blueprint_v2.4.pdf')
+    } catch (err) {
+      console.error('Error generating PDF:', err)
+    } finally {
+      setDownloadingPdf(false)
+    }
+  }
 
   // Modals
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
@@ -133,8 +148,11 @@ export default function DevicesPage() {
       const data = await res.json()
       setBioSyncMsg(data.message || 'All database fingerprints provisioned to terminal flash.')
       // Refresh enrollment data
-      const updated = await fetch(`/api/devices/enrollment?deviceId=${encodeURIComponent(selectedBioSyncDevice.id)}`).then(r => r.json())
-      setBioSyncData(updated)
+      const upRes = await fetch(`/api/devices/enrollment?deviceId=${encodeURIComponent(selectedBioSyncDevice.id)}`)
+      if (upRes.ok) {
+        const updated = await upRes.json()
+        setBioSyncData(updated)
+      }
       fetchDevices()
     } catch (err) {
       setBioSyncMsg('Failed to sync biometric templates.')
@@ -211,6 +229,10 @@ export default function DevicesPage() {
 
   const handleSendSampleTelemetry = async (deviceId: string) => {
     setTestTelemetryStatus("Sending sample ESP32 telemetry packet to backend...")
+    if (isSimulationMode) {
+      setTestTelemetryStatus(`[Simulation] Simulated telemetry packet acknowledged locally. Zero database reads/writes.`)
+      return
+    }
     try {
       const randomBatt = Math.floor(Math.random() * 8) + 88
       const randomRssi = - (Math.floor(Math.random() * 15) + 48)
@@ -430,20 +452,27 @@ export default function DevicesPage() {
           </p>
         </div>
         <div className="flex items-center space-x-2">
-          <a
-            href="/contract-response.html"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors bg-emerald-50 border border-emerald-300 text-emerald-800 hover:bg-emerald-100 h-10 px-4 py-2 shadow-sm"
-            title="Download / Print the signed contract response PDF for the firmware engineer"
+          <Link
+            href="/contract"
+            className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors bg-indigo-50 border border-indigo-200 text-indigo-800 hover:bg-indigo-100 h-10 px-4 py-2 shadow-sm"
+            title="Open the unified interactive firmware blueprint & protocol contract"
           >
-            <Download className="w-4 h-4 mr-2 text-emerald-700" /> Firmware Contract PDF
-          </a>
+            <BookOpen className="w-4 h-4 mr-2 text-indigo-700" /> Firmware Blueprint
+          </Link>
+          <button
+            onClick={handleDownloadBlueprintPdf}
+            disabled={downloadingPdf}
+            className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors bg-emerald-600 text-white hover:bg-emerald-700 h-10 px-4 py-2 shadow-sm"
+            title="Download the authoritative v2.4.1 PDF technical handshake contract"
+          >
+            <Download className="w-4 h-4 mr-2 text-white" />
+            {downloadingPdf ? 'Generating PDF...' : 'Download Official Contract PDF'}
+          </button>
           <button 
             onClick={() => { setIsApiSpecsModalOpen(true); setTestTelemetryStatus(null); }}
             className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 h-10 px-4 py-2 shadow-sm"
           >
-            <FileCode className="w-4 h-4 mr-2 text-indigo-600" /> ESP32 API & Payloads Guide
+            <FileCode className="w-4 h-4 mr-2 text-indigo-600" /> ESP32 API Guide
           </button>
           <button 
             onClick={() => { setIsAddModalOpen(true); setAddError(""); }}
@@ -1305,16 +1334,22 @@ export default function DevicesPage() {
                 </div>
               </div>
               <div className="flex items-center space-x-2">
-                <a
-                  href="/contract-response.html"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center text-xs font-semibold px-3 py-1.5 bg-emerald-50 text-emerald-800 border border-emerald-300 rounded-md hover:bg-emerald-100 transition-colors shadow-sm"
-                  title="Open, print, or save the signed firmware contract PDF"
+                <button
+                  onClick={handleDownloadBlueprintPdf}
+                  disabled={downloadingPdf}
+                  className="inline-flex items-center text-xs font-semibold px-3 py-1.5 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition-colors shadow-sm"
+                  title="Download the authoritative v2.4.1 PDF technical handshake contract"
                 >
-                  <Download className="w-3.5 h-3.5 mr-1.5 text-emerald-700" />
-                  Print / Save Contract PDF
-                </a>
+                  <Download className="w-3.5 h-3.5 mr-1.5 text-white" />
+                  {downloadingPdf ? 'Generating...' : 'Download Contract PDF'}
+                </button>
+                <Link
+                  href="/contract"
+                  className="inline-flex items-center text-xs font-semibold px-3 py-1.5 bg-indigo-50 text-indigo-800 border border-indigo-200 rounded-md hover:bg-indigo-100 transition-colors shadow-sm"
+                >
+                  <BookOpen className="w-3.5 h-3.5 mr-1.5 text-indigo-700" />
+                  Full Blueprint
+                </Link>
                 <button 
                   onClick={() => setIsApiSpecsModalOpen(false)} 
                   className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-200"
@@ -1409,68 +1444,70 @@ export default function DevicesPage() {
               {/* Tab 2: Biometric DB Enrollment */}
               {apiSpecTab === 'enrollment' && (
                 <div className="space-y-4">
-                  <div className="p-4 bg-amber-50 rounded-xl border border-amber-200 space-y-2">
+                  <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-200 space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="font-mono text-xs font-bold text-amber-800 bg-amber-100 px-2 py-1 rounded">
-                        Hackathon Fast-Track: Slot Number Mapping
+                      <span className="font-mono text-xs font-bold text-emerald-800 bg-emerald-100 px-2 py-1 rounded">
+                        Biometric Auto-Slot Handshake Protocol
                       </span>
-                      <span className="text-xs text-amber-700 font-semibold">Zero UART Buffer Overhead</span>
+                      <span className="text-xs text-emerald-700 font-semibold">Zero Collision EEPROM Allocation</span>
                     </div>
-                    <p className="text-xs text-amber-900 leading-relaxed">
-                      You do <strong>not</strong> need to dump raw 512-byte character templates over UART from the DY50 optical sensor! The optical sensor stores prints locally in Slot 1, 2, 3... When enrolling or scanning, simply reference the slot number. The backend maps slotNumber to the database user.
+                    <p className="text-xs text-emerald-900 leading-relaxed">
+                      The backend automatically coordinates slot allocation (e.g. Slot #1, #2, #3...). The terminal receives the enrollment command during its telemetry heartbeat, captures the finger scan twice on the DY50 prism, and reports completion to the backend.
                     </p>
                   </div>
 
                   <div>
-                    <p className="text-xs font-bold text-slate-700 mb-1.5">1. Get Users and Their Assigned Sensor Slots:</p>
+                    <p className="text-xs font-bold text-slate-700 mb-1.5">1. Admin Queues Enrollment Command (Backend):</p>
                     <div className="font-mono text-xs text-indigo-700 bg-slate-100 p-2 rounded border border-slate-200 mb-2">
-                      GET /api/devices/enrollment?deviceId=DEV_TERM_01
+                      POST /api/devices/enrollment
                     </div>
                     <pre className="p-4 bg-slate-900 text-slate-100 rounded-xl text-xs font-mono overflow-x-auto leading-relaxed border border-slate-800">
 {`{
-  "totalUsers": 3,
-  "users": [
-    { "userId": "USR001", "name": "John Doe", "slotNumber": 1, "hasFingerprint": true },
-    { "userId": "USR002", "name": "Sarah Connor", "slotNumber": 2, "hasFingerprint": true },
-    { "userId": "USR003", "name": "David Smith", "slotNumber": 3, "hasFingerprint": false }
-  ]
+  "action": "QUEUE_ENROLLMENT",
+  "deviceId": "DEV_TERM_01",
+  "userId": "001A",
+  "slotNumber": 3
 }`}
                     </pre>
                   </div>
 
                   <div>
-                    <p className="text-xs font-bold text-slate-700 mb-1.5">2. Complete Enrollment (Local Slot Only):</p>
+                    <p className="text-xs font-bold text-slate-700 mb-1.5">2. Terminal Reports Enrollment Result (ESP32):</p>
                     <div className="font-mono text-xs text-indigo-700 bg-slate-100 p-2 rounded border border-slate-200 mb-2">
-                      POST /api/devices/enrollment
+                      POST /api/devices/commands/result
                     </div>
                     <pre className="p-3 bg-slate-900 text-slate-100 rounded-lg text-xs font-mono overflow-x-auto">
 {`{
-  "action": "COMPLETE_ENROLLMENT",
   "deviceId": "DEV_TERM_01",
-  "userId": "USR003",
-  "slotNumber": 3
+  "commandId": "cmd_enroll_9k2a",
+  "type": "ENROLL_FINGERPRINT",
+  "status": "success",
+  "userId": "001A",
+  "slotNumber": 3,
+  "timestamp": "2026-09-25T12:00:00.000Z"
 }`}
                     </pre>
                     <p className="text-[11px] text-slate-500 mt-1">
-                      <strong>Backend Response:</strong> Returns <code>status: &quot;SUCCESS&quot;</code>, <code>enrolledSlots</code> count, and <code>freeSlots</code> remaining.
+                      <strong>Backend Response:</strong> Returns <code>{`{"ok": true, "ack": true, "status": "success"}`}</code>.
                     </p>
                   </div>
 
                   <div>
-                    <p className="text-xs font-bold text-slate-700 mb-1.5">3. Report Enrollment Failure (Optical Timeout/Noise):</p>
+                    <p className="text-xs font-bold text-slate-700 mb-1.5">3. Hardware Failure / Sensor Timeout Report:</p>
                     <div className="font-mono text-xs text-rose-700 bg-slate-100 p-2 rounded border border-slate-200 mb-2">
-                      POST /api/devices/enrollment
+                      POST /api/devices/commands/result
                     </div>
                     <pre className="p-3 bg-slate-900 text-slate-100 rounded-lg text-xs font-mono overflow-x-auto">
 {`{
-  "action": "REPORT_FAILURE",
   "deviceId": "DEV_TERM_01",
-  "userId": "USR003",
-  "reason": "Sensor timeout: finger removed before 2nd scan completed"
+  "commandId": "cmd_enroll_9k2a",
+  "type": "ENROLL_FINGERPRINT",
+  "status": "error",
+  "errorReason": "sensor_timeout"
 }`}
                     </pre>
                     <p className="text-[11px] text-slate-500 mt-1">
-                      Instantly alerts the web dashboard with the exact failure reason and updates LCD.
+                      Instantly alerts the web dashboard with the exact failure reason.
                     </p>
                   </div>
                 </div>
@@ -1487,37 +1524,44 @@ export default function DevicesPage() {
                       <span className="text-xs text-slate-500">Real-time Scan or Offline SPIFFS Sync</span>
                     </div>
                     <p className="text-xs text-slate-600 leading-relaxed">
-                      When the DY50 optical sensor identifies a finger, the ESP32 can send either the resolved <code>userId</code> OR just the sensor <code>slotNumber</code> directly!
+                      When the DY50 optical sensor matches a finger or keypad PIN is entered, the ESP32 transmits the scan event to the canonical check-in endpoint.
                     </p>
                   </div>
 
                   <div>
-                    <p className="text-xs font-bold text-slate-700 mb-1.5">Sending via Slot Number (Simplest for ESP32):</p>
+                    <p className="text-xs font-bold text-slate-700 mb-1.5">Sending via Slot Number (DY50 Optical):</p>
                     <pre className="p-4 bg-slate-900 text-slate-100 rounded-xl text-xs font-mono overflow-x-auto leading-relaxed border border-slate-800">
-{`// When DY50 reports match at Slot 3:
+{`// Optical Fingerprint Match:
 {
   "deviceId": "DEV_TERM_01",
-  "slotNumber": 3,
-  "authMode": "fingerprint"
+  "slotNumber": 1,
+  "authMode": "fingerprint",
+  "timestamp": 1727280120
 }
 
-// Or with userId:
+// 4x4 Matrix Keypad Entry:
 {
   "deviceId": "DEV_TERM_01",
-  "userId": "USR003",
-  "authMode": "fingerprint"
+  "userId": "001A",
+  "authMode": "pin",
+  "timestamp": 1727280120
 }`}
                     </pre>
                   </div>
 
                   <div>
-                    <p className="text-xs font-bold text-slate-700 mb-1.5">Backend Response for 16×2 LCD:</p>
+                    <p className="text-xs font-bold text-slate-700 mb-1.5">Backend Response for 16×2 / 20×4 LCD:</p>
                     <pre className="p-3 bg-slate-900 text-slate-100 rounded-lg text-xs font-mono overflow-x-auto">
 {`{
+  "ok": true,
   "success": true,
-  "processedCount": 1,
-  "displayMessage": "WELCOME, DAVID!",
-  "status": "Present"
+  "eventType": "CHECK_IN",
+  "userId": "001A",
+  "userName": "John Doe",
+  "userRole": "Student",
+  "status": "Present",
+  "displayMessage": "WELCOME, JOHN!",
+  "checkInTime": "2026-09-25T08:42:00.000Z"
 }`}
                     </pre>
                   </div>
@@ -1535,27 +1579,27 @@ export default function DevicesPage() {
                       <span className="text-xs text-emerald-700 font-semibold">Zero PSRAM Base64 Overhead</span>
                     </div>
                     <p className="text-xs text-emerald-900 leading-relaxed">
-                      <strong>Optimized for ESP32-S3!</strong> The backend now accepts standard <code>multipart/form-data</code>. The ESP32 can stream raw JPEG bytes directly from the camera frame buffer (<code>fb-&gt;buf</code>) without base64 conversion.
+                      The ESP32-CAM streams raw JPEG bytes directly from the frame buffer (<code>fb-&gt;buf</code>) as standard multipart form-data.
                     </p>
                   </div>
 
                   <div>
                     <p className="text-xs font-bold text-slate-700 mb-1.5">C++ / Arduino HTTPClient Example:</p>
                     <pre className="p-4 bg-slate-900 text-slate-100 rounded-xl text-xs font-mono overflow-x-auto leading-relaxed border border-slate-800">
-{`// Send raw camera_fb_t* fb directly:
+{`// Send raw camera frame buffer fb directly:
 String boundary = "----ESP32Boundary1234";
-http.begin("https://ais-dev-.../api/attendance/evidence");
+http.begin("https://your-attendx-domain.app/api/attendance/evidence");
 http.addHeader("Content-Type", "multipart/form-data; boundary=" + boundary);
 
-// Form data fields:
-// 1. userId (text): "USR003"
+// Multipart form fields:
+// 1. userId (text): "001A"
 // 2. deviceId (text): "DEV_TERM_01"
 // 3. image (binary): raw fb->buf bytes, size: fb->len`}
                     </pre>
                   </div>
 
                   <div className="p-3 bg-slate-100 rounded-lg text-xs text-slate-600">
-                    <span className="font-semibold text-slate-800">Note:</span> JSON with Base64 is also still supported as a fallback, but multipart streaming is recommended for stable memory performance.
+                    <span className="font-semibold text-slate-800">Note:</span> Multipart streaming provides optimal performance and lowest memory footprint on the ESP32.
                   </div>
                 </div>
               )}
@@ -1571,7 +1615,7 @@ http.addHeader("Content-Type", "multipart/form-data; boundary=" + boundary);
                       <span className="text-xs text-indigo-700 font-semibold">Explicit Cloud ACK Protocol</span>
                     </div>
                     <p className="text-xs text-indigo-900 leading-relaxed">
-                      After the ESP32 finishes executing a biometric enrollment (<code>ENROLL_FINGERPRINT</code>) or slot deletion (<code>DELETE_FINGERPRINT</code>), post the execution result here. The cloud will respond with an explicit <code>{`{"ok": true, "ack": true}`}</code>. Do <strong>not</strong> clear the command from EEPROM until <code>ack: true</code> is received.
+                      After executing a biometric enrollment (<code>ENROLL_FINGERPRINT</code>), the terminal reports the completion report. The cloud responds with an explicit <code>{`{"ok": true, "ack": true}`}</code>.
                     </p>
                   </div>
 
@@ -1580,12 +1624,12 @@ http.addHeader("Content-Type", "multipart/form-data; boundary=" + boundary);
                     <pre className="p-4 bg-slate-900 text-slate-100 rounded-xl text-xs font-mono overflow-x-auto leading-relaxed border border-slate-800">
 {`{
   "deviceId": "DEV_TERM_01",
-  "commandId": "cmd_enroll_9021",
+  "commandId": "cmd_enroll_9k2a",
   "type": "ENROLL_FINGERPRINT",
   "status": "success",
-  "userId": "USR001",
+  "userId": "001A",
   "slotNumber": 3,
-  "timestamp": "2026-09-24T09:15:30.000Z"
+  "timestamp": "2026-09-25T12:00:00.000Z"
 }`}
                     </pre>
                   </div>
@@ -1595,7 +1639,7 @@ http.addHeader("Content-Type", "multipart/form-data; boundary=" + boundary);
                     <pre className="p-4 bg-slate-900 text-slate-100 rounded-xl text-xs font-mono overflow-x-auto leading-relaxed border border-slate-800">
 {`{
   "deviceId": "DEV_TERM_01",
-  "commandId": "cmd_enroll_9021",
+  "commandId": "cmd_enroll_9k2a",
   "type": "ENROLL_FINGERPRINT",
   "status": "error",
   "errorReason": "sensor_timeout"
@@ -1611,15 +1655,11 @@ http.addHeader("Content-Type", "multipart/form-data; boundary=" + boundary);
   "ack": true,
   "success": true,
   "message": "Command result recorded successfully for terminal DEV_TERM_01",
-  "commandId": "cmd_enroll_9021",
+  "commandId": "cmd_enroll_9k2a",
   "status": "success",
   "slotNumber": 3
 }`}
                     </pre>
-                  </div>
-
-                  <div className="p-3 bg-amber-50 rounded-lg border border-amber-200 text-xs text-amber-800">
-                    <span className="font-semibold text-amber-950">Terminal-Initiated Enrollments:</span> If a technician enrolls a finger directly via the on-device keypad menu without a web dashboard command, send with <code>&quot;source&quot;: &quot;terminal&quot;</code> and omit <code>commandId</code>. The backend will automatically bind the slot to the user.
                   </div>
                 </div>
               )}

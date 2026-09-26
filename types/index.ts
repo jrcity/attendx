@@ -119,6 +119,7 @@ export interface CommandResultReport {
   source?: 'dashboard' | 'terminal';
   userId?: string;
   slotNumber?: number;
+  templateData?: string;
   errorReason?: string;
   timestamp: string;
 }

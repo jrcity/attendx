@@ -1,10 +1,12 @@
 "use client"
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
-import { Search, Download, Filter, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react'
+import { Search, Download, Filter, ChevronLeft, ChevronRight, RefreshCw, LogIn, LogOut, Sparkles } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useSystemMode } from '@/context/SystemModeContext'
 
 export default function HistoryPage() {
+  const { isSimulationMode, simState } = useSystemMode()
   const [history, setHistory] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -18,21 +20,65 @@ export default function HistoryPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const pageSize = 8
 
-  useEffect(() => {
+  const fetchHistory = useCallback(() => {
+    if (isSimulationMode) return
+
     fetch('/api/attendance/history')
-      .then(res => res.json())
+      .then(res => res.ok ? res.json() : [])
       .then(data => {
-        setHistory(data)
+        if (Array.isArray(data)) {
+          setHistory(data)
+        }
         setLoading(false)
       })
-      .catch(console.error)
-  }, [])
+      .catch(err => {
+        console.error(err)
+        setLoading(false)
+      })
+  }, [isSimulationMode])
 
-  const filteredHistory = history.filter(record => {
-    const matchesSearch = record.user.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          record.userId.toLowerCase().includes(searchTerm.toLowerCase())
+  useEffect(() => {
+    if (!isSimulationMode) {
+      fetchHistory()
+      const interval = setInterval(fetchHistory, 5000)
+      return () => clearInterval(interval)
+    } else {
+      setLoading(false)
+    }
+  }, [isSimulationMode, fetchHistory])
+
+  // Derive simulation history in-memory with zero API calls
+  const simulationDerivedHistory = useMemo(() => {
+    if (!isSimulationMode) return []
+    return simState.attendance.map(a => {
+      const user = simState.users.find(u => u.id === a.userId)
+      const hasImage = simState.images.some(img => img.attendanceId === a.id)
+      const isCheckedOut = Boolean(a.checkOutTime)
+      return {
+        ...a,
+        user: { name: user?.name || 'Unknown', role: user?.role || 'Student' },
+        hasImage,
+        isCheckedOut,
+        lastEventType: isCheckedOut ? 'CHECK_OUT' : 'CHECK_IN',
+        lastEventTime: a.checkOutTime || a.checkInTime || a.createdAt
+      }
+    }).sort((a, b) => {
+      const timeB = Math.max(new Date(b.checkOutTime || 0).getTime(), new Date(b.checkInTime || b.createdAt).getTime())
+      const timeA = Math.max(new Date(a.checkOutTime || 0).getTime(), new Date(a.checkInTime || a.createdAt).getTime())
+      return timeB - timeA
+    })
+  }, [isSimulationMode, simState])
+
+  const activeHistory = isSimulationMode ? simulationDerivedHistory : history
+
+  const filteredHistory = activeHistory.filter(record => {
+    const userName = record?.user?.name || ''
+    const userId = record?.userId || ''
+    const userRole = record?.user?.role || ''
+    const matchesSearch = userName.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          userId.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesDate = !dateFilter || record.date === dateFilter
-    const matchesRole = roleFilter === "All Roles" || record.user.role === roleFilter
+    const matchesRole = roleFilter === "All Roles" || userRole === roleFilter
     const matchesMode = modeFilter === "All Methods" || 
                         (record.checkInMode && record.checkInMode.toLowerCase() === modeFilter.toLowerCase()) ||
                         (record.checkOutMode && record.checkOutMode.toLowerCase() === modeFilter.toLowerCase())
@@ -46,16 +92,14 @@ export default function HistoryPage() {
   const startIndex = filteredHistory.length === 0 ? 0 : (currentPage - 1) * pageSize + 1
   const endIndex = Math.min(filteredHistory.length, currentPage * pageSize)
 
-  const exportToCSV = () => {
-    if (filteredHistory.length === 0) return
-
-    const headers = ['Date', 'Time', 'Name', 'User ID', 'Role', 'Check-In Mode', 'Check-Out Mode', 'Status', 'Late Duration (m)', 'Device ID', 'Sync Status']
+  const handleExportCSV = () => {
+    const headers = ['Date', 'Time', 'User ID', 'Name', 'Role', 'Check-In Mode', 'Check-Out Mode', 'Status', 'Late Duration (mins)', 'Device ID', 'Sync Status']
     const rows = filteredHistory.map(r => [
       r.date,
-      new Date(r.checkInTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
-      `"${r.user.name}"`,
+      new Date(r.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       r.userId,
-      r.user.role,
+      `"${r.user?.name || 'Unknown'}"`,
+      r.user?.role || 'Unknown',
       r.checkInMode || '-',
       r.checkOutMode || '-',
       r.status,
@@ -63,164 +107,178 @@ export default function HistoryPage() {
       r.deviceId,
       r.syncStatus
     ])
-    
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(e => e.join(','))
-    ].join('\n')
 
+    const csvContent = [headers.join(','), ...rows.map(row => row.join(','))].join('\n')
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-    const link = document.createElement("a")
-    const url = URL.createObjectURL(blob)
-    link.setAttribute("href", url)
-    link.setAttribute("download", `attendance_history_${new Date().toISOString().split('T')[0]}.csv`)
-    link.style.visibility = 'hidden'
-    document.body.appendChild(link)
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = `attendx_history_${new Date().toISOString().split('T')[0]}.csv`
     link.click()
-    document.body.removeChild(link)
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-end">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900">Attendance History</h2>
-          <p className="text-sm text-slate-500 mt-1">Comprehensive logs of all Check-In and Check-Out events across terminals.</p>
+          <h2 className="text-2xl font-bold tracking-tight text-slate-900">Attendance History Logs</h2>
+          <p className="text-sm text-slate-500 mt-1">
+            {isSimulationMode ? 'Simulated transaction ledger. Zero DB operations.' : 'Audit trail of all biometric and keypad authentication events received from ESP32 terminals.'}
+          </p>
         </div>
-        <button 
-          onClick={exportToCSV}
-          className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 h-10 px-4 py-2 shadow-sm"
-        >
-          <Download className="w-4 h-4 mr-2" /> Export to Excel
-        </button>
+        <div className="flex items-center space-x-2">
+          {isSimulationMode && (
+            <span className="flex items-center text-xs text-purple-700 font-semibold bg-purple-100 px-3 py-1 rounded-full border border-purple-200">
+              <Sparkles className="w-3.5 h-3.5 mr-1 text-purple-600 animate-spin" /> Simulation Active
+            </span>
+          )}
+          <button 
+            onClick={handleExportCSV}
+            className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 h-10 px-4 py-2 shadow-sm"
+          >
+            <Download className="w-4 h-4 mr-2 text-slate-500" /> Export Filtered CSV
+          </button>
+        </div>
       </div>
 
       <Card className="border-slate-200 shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-slate-100 flex flex-wrap gap-4 items-center bg-slate-50">
-          <div className="relative w-64">
+        {/* Filters */}
+        <div className="p-4 border-b border-slate-100 flex flex-col md:flex-row justify-between items-stretch md:items-center gap-3 bg-slate-50">
+          <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input 
               type="text" 
-              placeholder="Search user or ID..." 
+              placeholder="Search by name or User ID..." 
               value={searchTerm}
               onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
               className="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
             />
           </div>
-          <div className="flex items-center space-x-2">
-            <Filter className="w-4 h-4 text-slate-400 ml-2" />
+
+          <div className="flex flex-wrap items-center gap-2">
             <input 
               type="date" 
               value={dateFilter}
               onChange={(e) => { setDateFilter(e.target.value); setCurrentPage(1); }}
-              className="text-sm border border-slate-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white" 
+              className="text-sm border border-slate-200 rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <select 
               value={roleFilter}
               onChange={(e) => { setRoleFilter(e.target.value); setCurrentPage(1); }}
-              className="text-sm border border-slate-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              className="text-sm border border-slate-200 rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option>All Roles</option>
-              <option value="Student">Student</option>
-              <option value="Staff">Staff</option>
+              <option>Student</option>
+              <option>Staff</option>
             </select>
             <select 
               value={modeFilter}
               onChange={(e) => { setModeFilter(e.target.value); setCurrentPage(1); }}
-              className="text-sm border border-slate-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              className="text-sm border border-slate-200 rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option>All Methods</option>
-              <option value="Fingerprint">Fingerprint</option>
-              <option value="PIN">PIN</option>
+              <option value="fingerprint">Fingerprint (DY50)</option>
+              <option value="pin">Keypad PIN</option>
             </select>
           </div>
         </div>
-        
+
+        {/* History Table */}
         <div className="overflow-x-auto min-h-[360px]">
           <table className="w-full text-sm text-left">
             <thead className="text-xs text-slate-500 uppercase bg-slate-50/80 border-b border-slate-100">
               <tr>
-                <th className="px-6 py-4 font-medium">Date & Time</th>
+                <th className="px-6 py-4 font-medium">Date & Timestamp</th>
                 <th className="px-6 py-4 font-medium">User Details</th>
-                <th className="px-6 py-4 font-medium">Check-In Mode</th>
-                <th className="px-6 py-4 font-medium">Check-Out Mode</th>
-                <th className="px-6 py-4 font-medium">Status</th>
-                <th className="px-6 py-4 font-medium">Device ID</th>
-                <th className="px-6 py-4 font-medium">Sync Status</th>
+                <th className="px-6 py-4 font-medium">Role</th>
+                <th className="px-6 py-4 font-medium">Event Type</th>
+                <th className="px-6 py-4 font-medium">Auth Mode</th>
+                <th className="px-6 py-4 font-medium">Status / Late</th>
+                <th className="px-6 py-4 font-medium">Terminal</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {loading ? (
+              {!isSimulationMode && loading ? (
                 <tr>
                   <td colSpan={7} className="px-6 py-16 text-center text-slate-500">
                     <div className="inline-flex items-center space-x-2">
                       <RefreshCw className="w-4 h-4 animate-spin text-blue-600" />
-                      <span>Loading attendance history...</span>
+                      <span>Loading logs...</span>
                     </div>
                   </td>
                 </tr>
               ) : filteredHistory.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-6 py-16 text-center text-slate-500">
-                    No records found matching filters.
+                    No attendance records match your filter criteria.
                   </td>
                 </tr>
-              ) : paginatedHistory.map(record => (
-                <tr key={record.id} className="bg-white hover:bg-slate-50/70 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex flex-col">
-                      <span className="font-semibold text-slate-900">{record.date}</span>
-                      <span className="text-xs text-slate-500 mt-0.5 font-mono">
-                        {new Date(record.checkInTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex flex-col">
-                      <span className="font-semibold text-slate-900">{record.user.name}</span>
-                      <span className="text-xs text-slate-500 font-mono mt-0.5">
-                        {record.userId} • <span className="font-sans">{record.user.role}</span>
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={cn(
-                      "capitalize font-medium text-xs px-2.5 py-1 rounded-full inline-flex items-center",
-                      record.checkInMode === 'fingerprint' ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-blue-50 text-blue-700 border border-blue-200"
-                    )}>
-                      {record.checkInMode || '-'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={cn(
-                      "capitalize font-medium text-xs px-2.5 py-1 rounded-full inline-flex items-center",
-                      record.checkOutMode ? (record.checkOutMode === 'fingerprint' ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-blue-50 text-blue-700 border border-blue-200") : "text-slate-400 bg-slate-50"
-                    )}>
-                      {record.checkOutMode || '-'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={cn(
-                      "inline-flex px-2.5 py-1 text-xs font-semibold rounded-full",
-                      record.status === 'Late' ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-800"
-                    )}>
-                      {record.status} {record.status === 'Late' && `(+${record.lateDurationMinutes}m)`}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-slate-600 font-mono text-xs">
-                    {record.deviceId}
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={cn(
-                      "inline-flex items-center text-xs font-medium px-2 py-0.5 rounded",
-                      record.syncStatus === 'Synced' ? "text-emerald-700 bg-emerald-50" : "text-amber-700 bg-amber-50"
-                    )}>
-                      <span className={cn("w-1.5 h-1.5 rounded-full mr-1.5", record.syncStatus === 'Synced' ? "bg-emerald-500" : "bg-amber-500")}></span>
-                      {record.syncStatus}
-                    </span>
-                  </td>
-                </tr>
-              ))}
+              ) : (
+                paginatedHistory.map((record) => {
+                  const isCheckedOut = Boolean(record.checkOutTime)
+                  const displayTime = isCheckedOut ? record.checkOutTime : (record.checkInTime || record.createdAt)
+                  const displayMode = isCheckedOut ? (record.checkOutMode || record.checkInMode) : record.checkInMode
+
+                  return (
+                    <tr key={record.id} className="bg-white hover:bg-slate-50/70 transition-colors">
+                      <td className="px-6 py-4 font-mono text-xs text-slate-600 whitespace-nowrap">
+                        <div className="font-semibold text-slate-900">{record.date}</div>
+                        <div className="text-slate-400">
+                          {displayTime ? new Date(displayTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '-'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="font-semibold text-slate-900">{record.user?.name || 'Unknown'}</div>
+                        <div className="font-mono text-xs text-slate-500">{record.userId}</div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={cn(
+                          "px-2.5 py-1 text-xs font-medium rounded-full inline-block",
+                          record.user?.role === 'Student' ? "bg-blue-50 text-blue-700 border border-blue-100" : "bg-purple-50 text-purple-700 border border-purple-100"
+                        )}>
+                          {record.user?.role || 'Student'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        {isCheckedOut ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                            <LogOut className="w-3 h-3 mr-1" /> Check-Out
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <LogIn className="w-3 h-3 mr-1" /> Check-In
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={cn(
+                          "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium uppercase font-mono tracking-wider",
+                          displayMode === 'fingerprint' ? "bg-indigo-50 text-indigo-700 border border-indigo-100" : "bg-amber-50 text-amber-700 border border-amber-100"
+                        )}>
+                          {displayMode || 'fingerprint'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center space-x-2">
+                          <span className={cn(
+                            "px-2 py-0.5 rounded text-xs font-semibold",
+                            record.status === 'Present' ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"
+                          )}>
+                            {record.status}
+                          </span>
+                          {record.lateDurationMinutes > 0 && (
+                            <span className="text-xs text-amber-600 font-medium">
+                              +{record.lateDurationMinutes}m late
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 font-mono text-xs text-slate-500">
+                        {record.deviceId}
+                      </td>
+                    </tr>
+                  )
+                })
+              )}
             </tbody>
           </table>
         </div>

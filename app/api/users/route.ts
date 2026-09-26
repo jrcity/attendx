@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { readDb, writeDb } from '@/lib/db';
+import { readDb, saveUserDoc, generateNextKeypadUserId, isValidKeypadUserId } from '@/lib/db';
+import { User } from '@/types';
 
 export async function GET() {
   try {
@@ -21,6 +22,7 @@ export async function GET() {
 
     return NextResponse.json(enriched);
   } catch (err) {
+    console.error('Error fetching users:', err);
     return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 });
   }
 }
@@ -30,24 +32,35 @@ export async function POST(req: Request) {
     const body = await req.json();
     const db = await readDb();
     
-    const nextIdNum = db.users.length + 1;
-    const newId = `USR${String(nextIdNum).padStart(3, '0')}`;
-    
-    const newUser = {
-      id: newId,
-      name: body.name,
-      role: body.role as 'Student' | 'Staff',
-      status: 'Active' as 'Active' | 'Inactive',
+    const role = (body.role || 'Student') as 'Student' | 'Staff' | 'Admin';
+    let targetId = body.id ? String(body.id).trim().toUpperCase() : '';
+
+    // If ID not supplied or does not match Keypad ID format (digits + single letter), auto-generate keypad ID
+    if (!targetId || !isValidKeypadUserId(targetId)) {
+      targetId = generateNextKeypadUserId(db.users, role);
+    }
+
+    // Prevent duplicate ID collision
+    if (db.users.some(u => u.id === targetId)) {
+      targetId = generateNextKeypadUserId(db.users, role);
+    }
+
+    const newUser: User = {
+      id: targetId,
+      name: body.name?.trim() || 'New User',
+      role,
+      status: (body.status || 'Active') as 'Active' | 'Inactive',
       dateRegistered: new Date().toISOString(),
       totalAttendance: 0,
       lateOccurrences: 0,
     };
-    
-    db.users.push(newUser);
-    await writeDb(db);
+
+    // Save directly to Firestore collection 'users'
+    await saveUserDoc(newUser);
     
     return NextResponse.json(newUser, { status: 201 });
   } catch (err) {
+    console.error('Error creating user:', err);
     return NextResponse.json({ error: 'Failed to create user' }, { status: 500 });
   }
 }

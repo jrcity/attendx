@@ -328,12 +328,12 @@
         ESP32 (WROOM-32) + DY50 + ESP32-CAM
       </div>
       <div class="meta-item">
-        <strong>Key Convention</strong>
-        Accepts both camelCase & snake_case
+        <strong>Keypad ID Standard</strong>
+        Keypad Matrix Suffix: 001A (Student), 002B (Staff)
       </div>
       <div class="meta-item">
         <strong>Specification Status</strong>
-        <span class="status-pill pill-green">All 4 Endpoints Live</span>
+        <span class="status-pill pill-green">Approved Single Source of Truth</span>
       </div>
     </div>
 
@@ -469,7 +469,7 @@
     </div>
     <pre><code>{
   "deviceId": "DEV_TERM_01",
-  "userId": "USR001",                            // [REQUIRED for Keypad] string: Student/Staff ID (e.g. "USR001")
+  "userId": "001A",                            // [REQUIRED for Keypad] string: Student/Staff ID (e.g. "001A", "002B")
   "authMode": "pin",                             // [REQUIRED] "pin"
   "timestamp": "2026-09-24T08:55:00.000Z",
   "offlineBuffered": false
@@ -481,7 +481,7 @@
     <pre><code>[
   { "deviceId": "DEV_TERM_01", "slotNumber": 1, "timestamp": "2026-09-24T08:42:00.000Z", "offlineBuffered": true },
   { "deviceId": "DEV_TERM_01", "slotNumber": 2, "timestamp": "2026-09-24T08:49:10.000Z", "offlineBuffered": true },
-  { "deviceId": "DEV_TERM_01", "userId": "USR003", "authMode": "pin", "timestamp": "2026-09-24T09:12:00.000Z", "offlineBuffered": true }
+  { "deviceId": "DEV_TERM_01", "userId": "001A", "authMode": "pin", "timestamp": "2026-09-24T09:12:00.000Z", "offlineBuffered": true }
 ]</code></pre>
 
     <div class="tab-bar">
@@ -493,7 +493,7 @@
   "processedCount": 1,
   "attendanceId": "ATT_1727202720100_A9B2",           // [CRITICAL] Pass this value to ESP32-CAM in Section 2.3!
   "eventId": "ATT_1727202720100_A9B2",                // Mirror of attendanceId
-  "userId": "USR002",
+  "userId": "002B",
   "userName": "Amina Yusuf",
   "userRole": "Staff",
   "status": "Present",                               // "Present" (before 09:00 AM) or "Late"
@@ -550,10 +550,10 @@
           <td>Terminal ID, e.g. <code>"DEV_TERM_01"</code>.</td>
         </tr>
         <tr>
-          <td><code>userId</code> (or <code>user_id</code>)</td>
+          <td><code>userId</code></td>
           <td>Text string</td>
           <td>Optional</td>
-          <td>Student ID (e.g. <code>"USR003"</code>). If omitted, cloud automatically resolves it via <code>attendanceId</code>!</td>
+          <td>User ID (e.g. <code>"001A"</code>). If omitted, cloud automatically resolves it via <code>attendanceId</code>!</td>
         </tr>
         <tr>
           <td><code>image</code> (or <code>file</code>)</td>
@@ -571,12 +571,12 @@
   "ok": true,
   "success": true,
   "attendanceId": "ATT_1727202720100_A9B2",
-  "userId": "USR003",
-  "userName": "David Smith",
+  "userId": "001A",
+  "userName": "John Doe",
   "image": {
     "id": "IMG_1727202725000_C4",
     "attendanceId": "ATT_1727202720100_A9B2",
-    "userId": "USR003",
+    "userId": "001A",
     "captureTime": "2026-09-24T08:55:25.000Z",
     "uploadStatus": "captured"
   },
@@ -597,11 +597,11 @@
     <pre><code>// 1. Dashboard-Initiated Enrollment Completed
 {
   "deviceId": "DEV_TERM_01",
-  "commandId": "cmd_enroll_9021",                     // ID received in telemetry heartbeat
+  "commandId": "cmd_enroll_9k2a",                     // ID received in telemetry heartbeat
   "type": "ENROLL_FINGERPRINT",
   "status": "success",
   "source": "dashboard",
-  "userId": "USR001",
+  "userId": "001A",
   "slotNumber": 3,                                    // DY50 slot where fingerprint was stored
   "timestamp": "2026-09-24T09:15:30.000Z"
 }
@@ -612,7 +612,7 @@
   "type": "ENROLL_FINGERPRINT",
   "status": "success",
   "source": "terminal",
-  "userId": "USR003",
+  "userId": "001A",
   "slotNumber": 4,
   "timestamp": "2026-09-24T09:18:00.000Z"
 }

@@ -110,6 +110,36 @@
         "notes": { "type": "string" }
       },
       "required": ["id", "email", "name", "role", "status", "isMaster"]
+    },
+    "TerminalCommand": {
+      "title": "TerminalCommand",
+      "description": "Hardware commands dispatched to ESP32 terminals",
+      "type": "object",
+      "properties": {
+        "commandId": { "type": "string" },
+        "type": { "type": "string", "enum": ["ENROLL_FINGERPRINT", "DELETE_FINGERPRINT", "REBOOT", "CLEAR_RECORDS"] },
+        "deviceId": { "type": "string" },
+        "userId": { "type": "string" },
+        "slotNumber": { "type": "number" },
+        "status": { "type": "string", "enum": ["PENDING", "DISPATCHED", "EXECUTING", "COMPLETED", "FAILED"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "dispatchedAt": { "type": "string", "format": "date-time" },
+        "completedAt": { "type": "string", "format": "date-time" },
+        "errorReason": { "type": "string" }
+      },
+      "required": ["commandId", "type", "deviceId", "status", "createdAt"]
+    },
+    "SystemMetadata": {
+      "title": "SystemMetadata",
+      "description": "System state metadata and initialization markers",
+      "type": "object",
+      "properties": {
+        "initialized": { "type": "boolean" },
+        "version": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "seededAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["initialized"]
     }
   },
   "firestore": {
@@ -136,6 +166,14 @@
     "/administrators/{adminId}": {
       "schema": "Administrator",
       "description": "Authorized administrator registry for OTP authentication"
+    },
+    "/commands/{commandId}": {
+      "schema": "TerminalCommand",
+      "description": "Hardware command queue and execution dispatch"
+    },
+    "/system/{docId}": {
+      "schema": "SystemMetadata",
+      "description": "System metadata and initialization state"
     }
   }
 }

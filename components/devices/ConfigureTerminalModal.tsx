@@ -20,6 +20,7 @@ import {
   Layers,
   Save
 } from 'lucide-react'
+import { useSystemMode } from '@/context/SystemModeContext'
 
 interface ConfigureTerminalModalProps {
   device: Device
@@ -34,6 +35,7 @@ export function ConfigureTerminalModal({
   onClose,
   onSuccess
 }: ConfigureTerminalModalProps) {
+  const { isSimulationMode } = useSystemMode()
   const [name, setName] = useState(device.name || '')
   const [location, setLocation] = useState(device.location || '')
   const [maxSlots, setMaxSlots] = useState<number>(device.maxSlots || 300)
@@ -53,14 +55,25 @@ export function ConfigureTerminalModal({
     setSaving(true)
     setMsg(null)
 
-    try {
-      const updatedLcdText = [
-        lcdLine1.substring(0, 20),
-        lcdLine2.substring(0, 20),
-        `Time: Synced [${device.wifiStatus}]`,
-        `Net: OK | Bat:${device.batteryStatus}%`
-      ]
+    const updatedLcdText = [
+      lcdLine1.substring(0, 20),
+      lcdLine2.substring(0, 20),
+      `Time: Synced [${device.wifiStatus}]`,
+      `Net: OK | Bat:${device.batteryStatus}%`
+    ]
 
+    if (isSimulationMode) {
+      // In simulation mode, strictly mutate in-memory without calling real backend API
+      setMsg({ text: '[Simulation] Terminal configuration stored locally in simulation state!', type: 'success' })
+      setTimeout(() => {
+        onSuccess()
+        onClose()
+      }, 700)
+      setSaving(false)
+      return
+    }
+
+    try {
       const res = await fetch('/api/devices', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -148,163 +161,130 @@ export function ConfigureTerminalModal({
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500"
-                  placeholder="e.g. Main Entrance Gate"
-                  required
+                  placeholder="e.g. Science Lab North"
+                  className="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-800"
                 />
               </div>
 
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center">
-                  <MapPin className="w-3.5 h-3.5 mr-1 text-slate-500" /> Physical Location
+                  <MapPin className="w-3.5 h-3.5 mr-1 text-slate-500" /> Installation Location
                 </label>
                 <input
                   type="text"
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500"
-                  placeholder="e.g. Engineering Hallway 1"
-                  required
+                  placeholder="e.g. Building C, Room 204"
+                  className="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-800"
                 />
               </div>
             </div>
 
-            {/* Sensor & Telemetry Tuning */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-100">
+            {/* Hardware Capacities */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center">
-                  <Cpu className="w-3.5 h-3.5 mr-1 text-slate-500" /> Sensor Max Slots
+                  <Layers className="w-3.5 h-3.5 mr-1 text-slate-500" /> Sensor Capacity (Slots)
                 </label>
                 <input
                   type="number"
-                  min={10}
-                  max={1000}
+                  min="100"
+                  max="1000"
                   value={maxSlots}
                   onChange={(e) => setMaxSlots(Number(e.target.value))}
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg font-mono focus:outline-none focus:ring-2 focus:ring-slate-500"
+                  className="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-800"
                 />
-                <p className="text-[11px] text-slate-500">
-                  DY50 standard capacity is 300 templates
-                </p>
+                <p className="text-[11px] text-slate-500">DY50 default is 300 templates</p>
               </div>
 
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center">
-                  <Clock className="w-3.5 h-3.5 mr-1 text-slate-500" /> Heartbeat Interval (Sec)
+                  <Clock className="w-3.5 h-3.5 mr-1 text-slate-500" /> Heartbeat Interval (sec)
                 </label>
                 <input
                   type="number"
-                  min={5}
-                  max={300}
+                  min="5"
+                  max="300"
                   value={heartbeatInterval}
                   onChange={(e) => setHeartbeatInterval(Number(e.target.value))}
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg font-mono focus:outline-none focus:ring-2 focus:ring-slate-500"
+                  className="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-800"
                 />
-                <p className="text-[11px] text-slate-500">
-                  Default: 30 seconds for Wi-Fi efficiency
-                </p>
+                <p className="text-[11px] text-slate-500">Telemetry heartbeat period (15–30s recommended)</p>
               </div>
             </div>
 
-            {/* Feature Toggles */}
+            {/* Peripheral Toggles */}
             <div className="space-y-3 pt-2 border-t border-slate-100">
-              <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                Operational Hardware Modes
-              </label>
-
+              <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Subsystem Features</h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <label className="flex items-start space-x-3 p-3 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer">
+                <label className="flex items-center space-x-3 p-3 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={pinFallbackEnabled}
                     onChange={(e) => setPinFallbackEnabled(e.target.checked)}
-                    className="mt-0.5 rounded text-indigo-600 focus:ring-indigo-500"
+                    className="w-4 h-4 text-slate-800 rounded border-slate-300 focus:ring-slate-800"
                   />
-                  <div>
-                    <span className="text-xs font-bold text-slate-800 flex items-center">
-                      <Key className="w-3.5 h-3.5 mr-1 text-slate-600" />
-                      4×4 Keypad PIN Fallback
-                    </span>
-                    <p className="text-[11px] text-slate-500 mt-0.5">
-                      Allow users to enter PIN if optical scan degrades
-                    </p>
+                  <div className="text-xs">
+                    <p className="font-bold text-slate-800">4×4 Keypad Fallback</p>
+                    <p className="text-slate-500 text-[11px]">Allow manual PIN input</p>
                   </div>
                 </label>
 
-                <label className="flex items-start space-x-3 p-3 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer">
+                <label className="flex items-center space-x-3 p-3 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={cameraEvidenceEnabled}
                     onChange={(e) => setCameraEvidenceEnabled(e.target.checked)}
-                    className="mt-0.5 rounded text-indigo-600 focus:ring-indigo-500"
+                    className="w-4 h-4 text-slate-800 rounded border-slate-300 focus:ring-slate-800"
                   />
-                  <div>
-                    <span className="text-xs font-bold text-slate-800 flex items-center">
-                      <Camera className="w-3.5 h-3.5 mr-1 text-purple-600" />
-                      ESP-CAM Evidence Capture
-                    </span>
-                    <p className="text-[11px] text-slate-500 mt-0.5">
-                      Capture photo on PIN entry to prevent buddy-punching
-                    </p>
+                  <div className="text-xs">
+                    <p className="font-bold text-slate-800">ESP32-CAM Snapshot</p>
+                    <p className="text-slate-500 text-[11px]">Capture JPEG on keypad auth</p>
                   </div>
                 </label>
               </div>
             </div>
 
-            {/* Custom LCD Banner Text */}
+            {/* LCD Preview */}
             <div className="space-y-2 pt-2 border-t border-slate-100">
               <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center">
-                <Radio className="w-3.5 h-3.5 mr-1 text-cyan-600" /> Custom LCD Standby Message (16×2 or 20×4)
+                <Radio className="w-3.5 h-3.5 mr-1 text-slate-500" /> 20×4 LCD Default Greeting
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <div>
-                  <span className="text-[11px] text-slate-500">Line 1:</span>
-                  <input
-                    type="text"
-                    maxLength={20}
-                    value={lcdLine1}
-                    onChange={(e) => setLcdLine1(e.target.value)}
-                    className="w-full px-2.5 py-1.5 text-xs font-mono border border-slate-300 rounded bg-black/90 text-emerald-400"
-                  />
-                </div>
-                <div>
-                  <span className="text-[11px] text-slate-500">Line 2:</span>
-                  <input
-                    type="text"
-                    maxLength={20}
-                    value={lcdLine2}
-                    onChange={(e) => setLcdLine2(e.target.value)}
-                    className="w-full px-2.5 py-1.5 text-xs font-mono border border-slate-300 rounded bg-black/90 text-emerald-400"
-                  />
-                </div>
+                <input
+                  type="text"
+                  maxLength={20}
+                  value={lcdLine1}
+                  onChange={(e) => setLcdLine1(e.target.value)}
+                  placeholder="Line 1 (Max 20 chars)"
+                  className="text-xs font-mono px-3 py-1.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-800"
+                />
+                <input
+                  type="text"
+                  maxLength={20}
+                  value={lcdLine2}
+                  onChange={(e) => setLcdLine2(e.target.value)}
+                  placeholder="Line 2 (Max 20 chars)"
+                  className="text-xs font-mono px-3 py-1.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-800"
+                />
               </div>
             </div>
 
-            {/* Actions */}
-            <div className="flex items-center justify-end space-x-2 pt-3 border-t border-slate-100">
+            <div className="flex items-center justify-end space-x-2 pt-4 border-t border-slate-100">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+                className="px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={saving}
-                className="inline-flex items-center px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors disabled:opacity-50"
+                className="inline-flex items-center px-4 py-2 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 active:scale-95 rounded-lg shadow-sm transition-all"
               >
-                {saving ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 mr-1.5 animate-spin" />
-                    Saving Configuration...
-                  </>
-                ) : (
-                  <>
-                    <Save className="w-4 h-4 mr-1.5" />
-                    Save Configuration
-                  </>
-                )}
+                <Save className="w-3.5 h-3.5 mr-1.5" />
+                {saving ? 'Saving...' : 'Save Configuration'}
               </button>
             </div>
           </CardContent>

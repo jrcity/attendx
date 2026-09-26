@@ -1,7 +1,10 @@
 "use client"
 import React, { useEffect, useState, useMemo } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
-import { Fingerprint, Hash, Camera, CameraOff, Clock, CheckCircle2, AlertCircle, Sparkles, Plus, WifiOff } from 'lucide-react'
+import { 
+  Fingerprint, Hash, Camera, CameraOff, Clock, CheckCircle2, 
+  AlertCircle, Sparkles, Plus, LogIn, LogOut
+} from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useSystemMode } from '@/context/SystemModeContext'
 
@@ -23,7 +26,7 @@ export default function AttendanceLiveFeed() {
       }
 
       fetchFeed()
-      const interval = setInterval(fetchFeed, 4000)
+      const interval = setInterval(fetchFeed, 3000)
       return () => clearInterval(interval)
     }
   }, [isSimulationMode])
@@ -33,8 +36,14 @@ export default function AttendanceLiveFeed() {
       return simState.attendance.map(a => ({
         ...a,
         user: simState.users.find(u => u.id === a.userId),
-        hasImage: simState.images.some(img => img.attendanceId === a.id)
-      }))
+        hasImage: simState.images.some(img => img.attendanceId === a.id),
+        isCheckedOut: Boolean(a.checkOutTime),
+        lastEventType: a.checkOutTime ? 'CHECK_OUT' : 'CHECK_IN'
+      })).sort((a, b) => {
+        const timeB = Math.max(new Date(b.checkOutTime || 0).getTime(), new Date(b.checkInTime || b.createdAt).getTime())
+        const timeA = Math.max(new Date(a.checkOutTime || 0).getTime(), new Date(a.checkInTime || a.createdAt).getTime())
+        return timeB - timeA
+      })
     }
     return realFeed
   }, [isSimulationMode, simState, realFeed])
@@ -71,7 +80,7 @@ export default function AttendanceLiveFeed() {
             <div className="flex items-center space-x-2 bg-white border border-slate-200 px-3 py-1.5 rounded-full shadow-sm">
               <span className="flex items-center text-emerald-600 font-semibold">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 mr-2 animate-pulse"></span>
-                Hardware Polling (Live)
+                Hardware Polling (3s Live)
               </span>
             </div>
           )}
@@ -92,88 +101,114 @@ export default function AttendanceLiveFeed() {
             </p>
           </div>
         ) : (
-          feed.map((record) => (
-            <Card key={record.id} className="border-slate-200 shadow-sm overflow-hidden hover:border-slate-300 transition-colors bg-white">
-              <div className="flex flex-col sm:flex-row">
-                <div className={cn(
-                  "w-full sm:w-2 flex-shrink-0 h-2 sm:h-auto",
-                  record.status === 'Late' ? 'bg-amber-500' : 'bg-emerald-500'
-                )}></div>
-                <CardContent className="flex-1 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="flex items-center gap-4">
-                    <div className={cn(
-                      "p-3 rounded-xl border flex-shrink-0",
-                      record.checkInMode === 'fingerprint' ? 'bg-indigo-50 border-indigo-100 text-indigo-600' : 'bg-amber-50 border-amber-100 text-amber-600'
-                    )}>
-                      {record.checkInMode === 'fingerprint' ? <Fingerprint className="w-5 h-5" /> : <Hash className="w-5 h-5" />}
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-base text-slate-900">{record.user?.name || record.userId}</h3>
-                      <div className="flex items-center space-x-2 mt-0.5">
-                        <span className="text-xs font-medium text-slate-500">{record.user?.role || 'User'}</span>
-                        <span className="text-slate-300">•</span>
-                        <span className="text-xs text-slate-400 font-mono">ID: {record.userId}</span>
+          feed.map((record) => {
+            const isCheckedOut = Boolean(record.checkOutTime)
+            return (
+              <Card key={record.id} className="border-slate-200 shadow-sm overflow-hidden hover:border-slate-300 transition-colors bg-white">
+                <div className="flex flex-col sm:flex-row">
+                  <div className={cn(
+                    "w-full sm:w-2 flex-shrink-0 h-2 sm:h-auto",
+                    isCheckedOut ? 'bg-blue-500' : (record.status === 'Late' ? 'bg-amber-500' : 'bg-emerald-500')
+                  )}></div>
+                  <CardContent className="flex-1 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className={cn(
+                        "p-3 rounded-xl border flex-shrink-0",
+                        record.checkInMode === 'fingerprint' ? 'bg-indigo-50 border-indigo-100 text-indigo-600' : 'bg-amber-50 border-amber-100 text-amber-600'
+                      )}>
+                        {record.checkInMode === 'fingerprint' ? <Fingerprint className="w-5 h-5" /> : <Hash className="w-5 h-5" />}
+                      </div>
+                      <div>
+                        <div className="flex items-center space-x-2">
+                          <h3 className="font-bold text-base text-slate-900">{record.user?.name || record.userId}</h3>
+                          {isCheckedOut ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                              <LogOut className="w-2.5 h-2.5 mr-1 text-blue-600" /> Checked Out
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              <LogIn className="w-2.5 h-2.5 mr-1 text-emerald-600" /> In Building
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center space-x-2 mt-0.5">
+                          <span className="text-xs font-medium text-slate-500">{record.user?.role || 'User'}</span>
+                          <span className="text-slate-300">•</span>
+                          <span className="text-xs text-slate-400 font-mono">ID: {record.userId}</span>
+                          <span className="text-slate-300">•</span>
+                          <span className="text-xs text-slate-400 font-mono">{record.deviceId || 'DEV_TERM_01'}</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="flex flex-wrap items-center gap-3 sm:gap-6 sm:ml-auto">
-                    <div className="text-left sm:text-right">
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Timestamp</p>
-                      <p className="text-sm font-bold text-slate-900 flex items-center mt-0.5 font-mono">
-                        <Clock className="w-3.5 h-3.5 mr-1 text-slate-400" />
-                        {new Date(record.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                      </p>
-                    </div>
-
-                    <div className="h-8 w-px bg-slate-200 hidden sm:block"></div>
-
-                    <div className="flex flex-col gap-1 items-start sm:items-end">
-                      <div className="flex items-center space-x-2">
-                        {record.status === 'Late' ? (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-700">
-                            <AlertCircle className="w-3 h-3 mr-1" />
-                            Late ({record.lateDurationMinutes}m)
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-700">
-                            <CheckCircle2 className="w-3 h-3 mr-1" />
-                            Present
-                          </span>
-                        )}
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-700 capitalize">
-                          {record.checkInMode}
-                        </span>
+                    <div className="flex flex-wrap items-center gap-3 sm:gap-6 sm:ml-auto">
+                      <div className="text-left sm:text-right">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Activity Times</p>
+                        <div className="text-xs font-semibold text-slate-900 mt-0.5 font-mono space-y-0.5">
+                          {record.checkInTime && (
+                            <div className="flex items-center justify-start sm:justify-end text-emerald-700">
+                              <LogIn className="w-3 h-3 mr-1 text-emerald-600" />
+                              IN: {new Date(record.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                            </div>
+                          )}
+                          {isCheckedOut && (
+                            <div className="flex items-center justify-start sm:justify-end text-blue-700">
+                              <LogOut className="w-3 h-3 mr-1 text-blue-600" />
+                              OUT: {new Date(record.checkOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex flex-wrap items-center gap-1.5 justify-end">
-                        {record.offlineBuffered && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-amber-50 text-amber-800 border border-amber-200" title="Captured locally on terminal SPIFFS during network outage and burst-replayed chronologically upon Wi-Fi recovery.">
-                            <Clock className="w-3 h-3 mr-1 text-amber-600" /> Buffered Replay
+
+                      <div className="h-8 w-px bg-slate-200 hidden sm:block"></div>
+
+                      <div className="flex flex-col gap-1 items-start sm:items-end">
+                        <div className="flex items-center space-x-2">
+                          {record.status === 'Late' ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-700">
+                              <AlertCircle className="w-3 h-3 mr-1" />
+                              Late ({record.lateDurationMinutes}m)
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-700">
+                              <CheckCircle2 className="w-3 h-3 mr-1" />
+                              Present
+                            </span>
+                          )}
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-700 capitalize">
+                            {record.checkInMode || 'fingerprint'}
                           </span>
-                        )}
-                        {record.checkInMode === 'pin' && (
-                          record.hasImage ? (
+                        </div>
+                        <div className="flex flex-wrap items-center gap-1.5 justify-end">
+                          {record.offlineBuffered && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-amber-50 text-amber-800 border border-amber-200" title="Captured locally on terminal SPIFFS during network outage and burst-replayed chronologically upon Wi-Fi recovery.">
+                              <Clock className="w-3 h-3 mr-1 text-amber-600" /> Buffered Replay
+                            </span>
+                          )}
+                          {record.checkInMode === 'pin' && (
+                            record.hasImage ? (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
+                                <Camera className="w-3 h-3 mr-1" /> Evidence Logged
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-slate-50 text-slate-500 border border-slate-200" title="Photo capture dropped across network outage (non-retried). PIN authentication was verified safely.">
+                                <CameraOff className="w-3 h-3 mr-1 text-slate-400" /> Photo Dropped (Outage)
+                              </span>
+                            )
+                          )}
+                          {record.checkInMode === 'fingerprint' && record.hasImage && (
                             <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
                               <Camera className="w-3 h-3 mr-1" /> Evidence Logged
                             </span>
-                          ) : (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-slate-50 text-slate-500 border border-slate-200" title="Photo capture dropped across network outage (non-retried). PIN authentication was verified safely.">
-                              <CameraOff className="w-3 h-3 mr-1 text-slate-400" /> Photo Dropped (Outage)
-                            </span>
-                          )
-                        )}
-                        {record.checkInMode === 'fingerprint' && record.hasImage && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
-                            <Camera className="w-3 h-3 mr-1" /> Evidence Logged
-                          </span>
-                        )}
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </CardContent>
-              </div>
-            </Card>
-          ))
+                  </CardContent>
+                </div>
+              </Card>
+            )
+          })
         )}
       </div>
     </div>
