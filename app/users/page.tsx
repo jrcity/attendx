@@ -101,7 +101,7 @@ export default function UsersPage() {
     if (isSimulationMode) return
 
     fetch('/api/users')
-      .then(res => res.json())
+      .then(res => res.ok ? res.json() : [])
       .then(data => {
         if (Array.isArray(data)) setUsers(data)
       })
@@ -113,8 +113,9 @@ export default function UsersPage() {
 
   // Fetch terminals for enrollment
   useEffect(() => {
+    if (isSimulationMode) return
     fetch('/api/devices')
-      .then(res => res.json())
+      .then(res => res.ok ? res.json() : [])
       .then(data => {
         if (Array.isArray(data)) {
           setTerminals(data)
@@ -124,13 +125,13 @@ export default function UsersPage() {
         }
       })
       .catch(console.error)
-  }, [selectedTerminalId])
+  }, [isSimulationMode, selectedTerminalId])
 
   useEffect(() => {
     let active = true
     if (!isSimulationMode) {
       fetch('/api/users')
-        .then(res => res.json())
+        .then(res => res.ok ? res.json() : [])
         .then(data => {
           if (active && Array.isArray(data)) {
             setUsers(data)
@@ -164,9 +165,14 @@ export default function UsersPage() {
     setFpFailureReason('')
     setElapsedSeconds(0)
 
+    if (isSimulationMode) {
+      setTargetSlot(1)
+      return
+    }
+
     try {
       const res = await fetch(`/api/devices/enrollment?deviceId=${encodeURIComponent(selectedTerminalId || 'DEV_TERM_01')}`)
-      const data = await res.json()
+      const data = res.ok ? await res.json() : null
       if (data && data.totalEnrolledInDb !== undefined) {
         setTargetSlot(data.totalEnrolledInDb + 1)
       } else {
@@ -218,8 +224,8 @@ export default function UsersPage() {
         throw new Error('Failed to queue terminal enrollment command.')
       }
 
-      const armData = await armRes.json()
-      const currentJobId = armData.job?.jobId
+      const armData = armRes.ok ? await armRes.json().catch(() => null) : null
+      const currentJobId = armData?.job?.jobId
 
       setFpEnrollStatus('PENDING_TERMINAL_PICKUP')
       setFpStatusMsg(`Command queued in Firestore! Waiting for terminal ${targetDev} to fetch command on next heartbeat...`)
@@ -236,7 +242,7 @@ export default function UsersPage() {
         try {
           const pollRes = await fetch(`/api/devices/enrollment?jobId=${currentJobId}&deviceId=${encodeURIComponent(targetDev)}`)
           if (pollRes.ok) {
-            const pollData = await pollRes.json()
+            const pollData = await pollRes.json().catch(() => ({}))
 
             if (pollData.status === 'PENDING_SCAN' || pollData.status === 'SCANNING' || pollData.status === 'EXECUTING') {
               setFpEnrollStatus('WAITING_FOR_FINGER')
@@ -317,7 +323,7 @@ export default function UsersPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: cleanId, name: addingName, role: addingRole })
       })
-      const created = await res.json()
+      const created = await res.json().catch(() => ({}))
       if (!res.ok) {
         showNotification(created?.error || "Failed to add user.", "error")
         return

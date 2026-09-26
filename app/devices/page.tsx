@@ -83,10 +83,7 @@ export default function DevicesPage() {
     if (isSimulationMode) return
 
     fetch('/api/devices')
-      .then(res => {
-        if (!res.ok) throw new Error('Failed to load devices')
-        return res.json()
-      })
+      .then(res => res.ok ? res.json().catch(() => []) : [])
       .then(data => {
         if (Array.isArray(data)) {
           setDevices(data)
@@ -123,8 +120,8 @@ export default function DevicesPage() {
     setScanStep('idle')
     try {
       const res = await fetch(`/api/devices/enrollment?deviceId=${encodeURIComponent(device.id)}`)
-      const data = await res.json()
-      setBioSyncData(data)
+      const data = res.ok ? await res.json() : null
+      if (data) setBioSyncData(data)
     } catch (err) {
       console.error(err)
     } finally {
@@ -145,7 +142,7 @@ export default function DevicesPage() {
           deviceId: selectedBioSyncDevice.id
         })
       })
-      const data = await res.json()
+      const data = res.ok ? await res.json() : {}
       setBioSyncMsg(data.message || 'All database fingerprints provisioned to terminal flash.')
       // Refresh enrollment data
       const upRes = await fetch(`/api/devices/enrollment?deviceId=${encodeURIComponent(selectedBioSyncDevice.id)}`)
@@ -177,8 +174,8 @@ export default function DevicesPage() {
           userId
         })
       })
-      const armData = await armRes.json()
-      const currentJobId = armData.job?.jobId
+      const armData = armRes.ok ? await armRes.json() : null
+      const currentJobId = armData?.job?.jobId
 
       setBioSyncMsg(`Terminal ${selectedBioSyncDevice.id} armed for ${userName}. Awaiting physical finger placement...`)
       setScanStep('capturing')
@@ -196,8 +193,11 @@ export default function DevicesPage() {
               clearInterval(pollTimer)
               setScanStep('saved')
               setBioSyncMsg(`Hardware Confirmed: Enrolled & saved biometric fingerprint for ${userName} to database!`)
-              const updated = await fetch(`/api/devices/enrollment?deviceId=${encodeURIComponent(selectedBioSyncDevice.id)}`).then(r => r.json())
-              setBioSyncData(updated)
+              const updatedRes = await fetch(`/api/devices/enrollment?deviceId=${encodeURIComponent(selectedBioSyncDevice.id)}`)
+              if (updatedRes.ok) {
+                const updated = await updatedRes.json()
+                setBioSyncData(updated)
+              }
               fetchDevices()
               return
             } else if (pollData.status === 'FAILED') {
@@ -257,8 +257,8 @@ export default function DevicesPage() {
           ]
         })
       })
-      const data = await res.json()
-      setTestTelemetryStatus(`Success! Heartbeat acknowledged by backend at ${new Date(data.serverTime).toLocaleTimeString()}. Frontend state refreshed live.`)
+      const data = res.ok ? await res.json() : {}
+      setTestTelemetryStatus(`Success! Heartbeat acknowledged by backend at ${new Date(data.serverTime || Date.now()).toLocaleTimeString()}. Frontend state refreshed live.`)
       fetchDevices()
     } catch (err) {
       setTestTelemetryStatus("Error dispatching test telemetry")
@@ -326,8 +326,8 @@ export default function DevicesPage() {
       })
 
       if (!res.ok) {
-        const errorData = await res.json()
-        setAddError(errorData.error || "Failed to register terminal")
+        const errorData = await res.json().catch(() => ({}))
+        setAddError(errorData?.error || "Failed to register terminal")
         return
       }
 

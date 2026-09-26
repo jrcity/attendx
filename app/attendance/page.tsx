@@ -17,7 +17,7 @@ export default function AttendanceLiveFeed() {
     if (!isSimulationMode) {
       const fetchFeed = () => {
         fetch('/api/attendance/feed')
-          .then(res => res.json())
+          .then(res => res.ok ? res.json() : [])
           .then(data => {
             setRealFeed(Array.isArray(data) ? data : [])
             setLoading(false)

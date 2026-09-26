@@ -96,8 +96,8 @@ export function EnrollFingerprintModal({
     const loadData = async () => {
       try {
         const res = await fetch(`/api/devices/enrollment?deviceId=${encodeURIComponent(device.id)}`)
-        const data = await res.json()
-        if (!isMounted) return
+        const data = res.ok ? await res.json() : null
+        if (!isMounted || !data) return
 
         if (data.users) {
           const mappedUsers = data.users.map((u: {
@@ -203,8 +203,8 @@ export function EnrollFingerprintModal({
         throw new Error('Failed to queue terminal enrollment command.')
       }
 
-      const armData = await armRes.json()
-      const currentJobId = armData.job?.jobId
+      const armData = armRes.ok ? await armRes.json() : null
+      const currentJobId = armData?.job?.jobId
 
       setStatus('PENDING_TERMINAL_PICKUP')
       setStatusMessage(`Command queued in Firestore! Waiting for terminal ${device.id} to fetch command on next heartbeat...`)
@@ -223,7 +223,7 @@ export function EnrollFingerprintModal({
         try {
           const pollRes = await fetch(`/api/devices/enrollment?jobId=${currentJobId}&deviceId=${encodeURIComponent(device.id)}`)
           if (pollRes.ok) {
-            const pollData = await pollRes.json()
+            const pollData = await pollRes.json().catch(() => ({}))
 
             if (pollData.status === 'PENDING_SCAN' || pollData.status === 'SCANNING' || pollData.status === 'EXECUTING') {
               setStatus('WAITING_FOR_FINGER')

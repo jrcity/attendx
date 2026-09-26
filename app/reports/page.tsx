@@ -32,7 +32,7 @@ export default function ReportsPage() {
       } else {
         const res = await fetch('/api/attendance/history')
         if (!res.ok) throw new Error('Failed to load history from backend')
-        rawData = await res.json()
+        rawData = await res.json().catch(() => [])
       }
       
       const filtered = (Array.isArray(rawData) ? rawData : []).filter((record: any) => {
