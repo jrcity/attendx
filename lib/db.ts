@@ -495,7 +495,7 @@ export async function recordCommandResult(report: CommandResultReport): Promise<
       status: report.status === 'success' ? 'COMPLETED' : 'FAILED',
       completedAt: now,
       slotNumber: targetSlot,
-      errorReason: report.errorReason,
+      errorReason: report.errorReason || null,
       userId: finalUserId
     }, { merge: true });
   }
