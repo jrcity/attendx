@@ -1207,22 +1207,14 @@ export default function DevicesPage() {
                 </div>
               )}
 
-              {/* Action: Sync All Database Templates to this Terminal */}
+              {/* Action: Hardware Enrollment Notice for SFM-V1.7 */}
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-200 gap-3">
                 <div>
-                  <h4 className="text-sm font-bold text-slate-900">Synchronize All Database Templates</h4>
+                  <h4 className="text-sm font-bold text-slate-900">Hardware Biometric Enrollment (SFM-V1.7)</h4>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    Push all active biometric templates from the central database into this terminal&apos;s local flash.
+                    The SFM-V1.7 optical sensor automatically manages template storage internally (Slots 1–10,000). Use the &quot;Enroll on Terminal&quot; action below for interactive enrollment.
                   </p>
                 </div>
-                <button
-                  onClick={handleSyncAllTemplates}
-                  disabled={bioSyncLoading}
-                  className="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors whitespace-nowrap"
-                >
-                  <Download className={cn("w-4 h-4 mr-2", bioSyncLoading && "animate-spin")} />
-                  {bioSyncLoading ? "Syncing Biometrics..." : "Sync All Templates to Terminal"}
-                </button>
               </div>
 
               {/* Database Users List with Biometric Status */}

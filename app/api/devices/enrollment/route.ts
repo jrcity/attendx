@@ -79,13 +79,13 @@ export async function GET(req: Request) {
         role: u.role,
         hasFingerprint: !!fp,
         slotNumber: fp?.slotNumber || 0,
-        templateData: fp?.templateData || (fp ? `DY50_FP_${u.id}_SAMPLE_TEMPLATE_HEX_A5F90B2` : null),
+        templateData: fp?.templateData || null,
         isEnrolledOnThisTerminal: deviceId && fp?.enrolledTerminals?.includes(deviceId)
       };
     });
 
     const device = deviceId ? db.devices.find(d => d.id === deviceId) : null;
-    const maxSlots = device?.maxSlots || 300;
+    const maxSlots = device?.maxSlots || 10000;
     const terminalEnrolledCount = deviceId 
       ? db.fingerprints.filter(f => f.status === 'Active' && f.enrolledTerminals?.includes(deviceId)).length
       : db.fingerprints.filter(f => f.status === 'Active').length;
@@ -121,48 +121,15 @@ export async function POST(req: Request) {
     const slotNumber = rawSlot !== undefined && rawSlot !== null && rawSlot !== '' ? Number(rawSlot) : undefined;
     const commandId = body.commandId || body.command_id || body.jobId;
 
-    // 1. Sync all fingerprint templates to terminal
+    // 1. Sync / Status update
     if (rawAction === 'SYNC_ALL_TO_TERMINAL') {
       const devIndex = db.devices.findIndex(d => d.id === cleanDeviceId);
-      if (devIndex === -1) {
-        return NextResponse.json({ error: 'Device not found' }, { status: 404 });
+      if (devIndex !== -1) {
+        return NextResponse.json({
+          error: 'Optical sensor module (SFM-V1.7) allocates physical template slots internally (1-10000) during physical enrollment. Templates cannot be synthesized or pushed directly from central database without physical finger placement on the sensor.'
+        }, { status: 400 });
       }
-
-      let syncedCount = 0;
-      db.fingerprints.forEach((fp, idx) => {
-        if (fp.status === 'Active') {
-          if (!fp.enrolledTerminals) fp.enrolledTerminals = [];
-          if (!fp.enrolledTerminals.includes(cleanDeviceId)) {
-            fp.enrolledTerminals.push(cleanDeviceId);
-          }
-          if (!fp.slotNumber) {
-            fp.slotNumber = idx + 1;
-          }
-          if (!fp.templateData) {
-            fp.templateData = `DY50_FP_${fp.userId}_TEMPLATE_HEX_${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-          }
-          syncedCount++;
-        }
-      });
-
-      db.devices[devIndex].enrolledFingerprints = syncedCount;
-      db.devices[devIndex].freeSlots = Math.max(0, (db.devices[devIndex].maxSlots || 300) - syncedCount);
-      db.devices[devIndex].fingerprintStatus = `DY50 Ready (${syncedCount} templates loaded)`;
-      db.devices[devIndex].lcdText = [
-        '** ATTENDX TERMINAL **',
-        `Bio-Sync Complete!`,
-        `${syncedCount} Fingerprints OK`,
-        `Net: CONNECTED | Bat:${db.devices[devIndex].batteryStatus}%`
-      ];
-
-      await writeDb(db);
-
-      return NextResponse.json({
-        success: true,
-        message: `Successfully synchronized ${syncedCount} fingerprint templates from database to terminal ${cleanDeviceId}`,
-        syncedCount,
-        deviceId: cleanDeviceId
-      });
+      return NextResponse.json({ error: 'Device not found' }, { status: 404 });
     }
 
     // 2. Queue live interactive enrollment on a physical terminal for a user (persisted in Firestore)
@@ -229,19 +196,8 @@ export async function POST(req: Request) {
       body.status === 'success';
 
     if (isCompletionAction) {
-      if (!rawUserId && slotNumber !== undefined) {
-        const paddedSlot = String(slotNumber).padStart(3, '0');
-        const candidateUser = 
-          db.users.find(u => u.id.startsWith(paddedSlot)) ||
-          db.users[slotNumber - 1] ||
-          db.users[0];
-        if (candidateUser) {
-          rawUserId = candidateUser.id;
-        }
-      }
-
       if (!rawUserId) {
-        return NextResponse.json({ error: 'userId or slotNumber is required' }, { status: 400 });
+        return NextResponse.json({ error: 'userId is required to complete fingerprint mapping' }, { status: 400 });
       }
 
       const cleanUserId = String(rawUserId).trim().toUpperCase();
@@ -250,7 +206,11 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'User not found in registered directory' }, { status: 404 });
       }
 
-      const resolvedSlot = slotNumber || (db.fingerprints.length + 1);
+      if (slotNumber === undefined) {
+        return NextResponse.json({ error: 'slotNumber assigned by SFM sensor module is required' }, { status: 400 });
+      }
+
+      const resolvedSlot = slotNumber;
 
       // Record result in Firestore (updates commands, fingerprints, and device status simultaneously)
       await recordCommandResult({
@@ -269,7 +229,7 @@ export async function POST(req: Request) {
       const totalEnrolledOnTerminal = cleanDeviceId 
         ? updatedDb.fingerprints.filter(f => f.status === 'Active' && f.enrolledTerminals?.includes(cleanDeviceId)).length
         : updatedDb.fingerprints.filter(f => f.status === 'Active').length;
-      const maxSlots = dev?.maxSlots || 300;
+      const maxSlots = dev?.maxSlots || 10000;
       const freeSlots = Math.max(0, maxSlots - totalEnrolledOnTerminal);
 
       return NextResponse.json({

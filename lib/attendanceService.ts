@@ -120,34 +120,13 @@ export async function processAttendancePayload(
       );
 
       if (!fp) {
-        // Try user matching slot number (e.g. slot 1 -> '001A', '001B', 'USR001', or index)
-        const paddedNum = String(targetSlot).padStart(3, '0');
-        const matchedUser =
-          db.users.find(u => u.id.toUpperCase().startsWith(paddedNum)) ||
-          db.users.find(u => u.id.toUpperCase() === `USR${paddedNum}`) ||
-          db.users.find(u => u.id.includes(String(targetSlot)));
-
-        if (matchedUser) {
-          userId = matchedUser.id;
-          const newFp: Fingerprint = {
-            id: `FP_${Date.now()}_${targetSlot}`,
-            userId: matchedUser.id,
-            registrationDate: now.toISOString(),
-            status: 'Active',
-            slotNumber: targetSlot,
-            templateData: `DY50_FP_${matchedUser.id}_SLOT_${targetSlot}`,
-            enrolledTerminals: [cleanDeviceId]
-          };
-          db.fingerprints.push(newFp);
-        } else {
-          unmappedError = {
-            status: 404,
-            error: 'SLOT_NOT_MAPPED',
-            message: `Optical fingerprint slot #${targetSlot} is not mapped to an enrolled user on ${cleanDeviceId}. Please enroll via Dashboard or Terminal Menu first.`,
-            displayMessage: 'SLOT NOT FOUND'
-          };
-          continue;
-        }
+        unmappedError = {
+          status: 404,
+          error: 'SLOT_NOT_MAPPED',
+          message: `Optical fingerprint slot #${targetSlot} is not mapped to an enrolled user on ${cleanDeviceId}. Please enroll via Dashboard or Terminal Menu first.`,
+          displayMessage: 'SLOT NOT FOUND'
+        };
+        continue;
       } else {
         userId = fp.userId;
       }
@@ -159,7 +138,7 @@ export async function processAttendancePayload(
           status: 400,
           error: 'MISSING_IDENTIFIER',
           message:
-            'Either slotNumber (for DY50 fingerprint) or userId (for keypad PIN) is required in the check-in payload.',
+            'Either slotNumber (for optical fingerprint) or userId (for keypad PIN) is required in the check-in payload.',
           displayMessage: 'IDENTIFIER REQ'
         };
       }

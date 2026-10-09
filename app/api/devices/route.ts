@@ -31,7 +31,7 @@ export async function GET() {
         macAddress: device.macAddress || `24:0A:C4:B8:3A:${(10 + index).toString(16).toUpperCase()}`,
         firmwareVersion: device.firmwareVersion || 'AttendX-FW v2.4.1',
         esp32Heap: device.esp32Heap || '284 KB Free / 520 KB Total',
-        fingerprintStatus: device.fingerprintStatus || 'DY50 Ready (UART 57600)',
+        fingerprintStatus: device.fingerprintStatus || 'SFM-V1.7 Ready (UART 57600)',
         cameraStatus: device.cameraStatus || 'ESP32-S3-CAM Standby (SVGA OV2640)',
         keypadStatus: device.keypadStatus || '4x4 Matrix Active (50ms debounce)',
         lcdStatus: device.lcdStatus || '20x4 I2C LCD Ready (0x27)',
@@ -42,13 +42,13 @@ export async function GET() {
           `Net: ${computedWifi.toUpperCase()} | Bat:${device.batteryStatus || 0}%`
         ],
         voltage: device.voltage || '4.15V (Nominal 3.7V Li-ion)',
-        maxSlots: device.maxSlots || 300,
+        maxSlots: device.maxSlots || 10000,
         enrolledFingerprints: device.enrolledFingerprints !== undefined 
           ? device.enrolledFingerprints 
-          : db.fingerprints.filter(f => f.status === 'Active' && f.enrolledTerminals?.includes(device.id)).length || (index === 0 ? 2 : 0),
+          : db.fingerprints.filter(f => f.status === 'Active' && f.enrolledTerminals?.includes(device.id)).length,
         freeSlots: device.freeSlots !== undefined 
           ? device.freeSlots 
-          : (device.maxSlots || 300) - (device.enrolledFingerprints !== undefined ? device.enrolledFingerprints : 2),
+          : (device.maxSlots || 10000) - (device.enrolledFingerprints !== undefined ? device.enrolledFingerprints : 0),
         heartbeatIntervalSeconds: intervalSec,
         pinFallbackEnabled: device.pinFallbackEnabled ?? true,
         cameraEvidenceEnabled: device.cameraEvidenceEnabled ?? true
@@ -90,10 +90,11 @@ export async function POST(req: Request) {
       macAddress: body.macAddress || `24:0A:C4:D5:19:${(20 + db.devices.length).toString(16).toUpperCase()}`,
       firmwareVersion: 'AttendX-FW v2.4.1',
       esp32Heap: '292 KB Free / 520 KB Total',
-      fingerprintStatus: 'DY50 Ready (UART 57600)',
+      fingerprintStatus: 'SFM-V1.7 Ready (UART 57600)',
       cameraStatus: 'ESP32-S3-CAM Standby (SVGA OV2640)',
       keypadStatus: '4x4 Matrix Active (50ms debounce)',
       lcdStatus: '20x4 I2C LCD Ready (0x27)',
+      maxSlots: body.maxSlots ? Number(body.maxSlots) : 10000,
       lcdText: [
         '** ATTENDX TERMINAL **',
         'Ready for Scan...',

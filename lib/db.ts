@@ -66,10 +66,7 @@ const INITIAL_DATA: DatabaseSchema = {
     { id: '002B', name: 'Amina Yusuf', role: 'Staff', status: 'Active', dateRegistered: new Date().toISOString(), totalAttendance: 120, lateOccurrences: 0 },
     { id: '003A', name: 'David Smith', role: 'Student', status: 'Active', dateRegistered: new Date().toISOString(), totalAttendance: 42, lateOccurrences: 5 }
   ],
-  fingerprints: [
-    { id: 'FP001', userId: '001A', registrationDate: new Date().toISOString(), status: 'Active', slotNumber: 1, templateData: 'DY50_FP_001A_SAMPLE_TEMPLATE_HEX_A5F90B2', enrolledTerminals: ['DEV_TERM_01'] },
-    { id: 'FP002', userId: '002B', registrationDate: new Date().toISOString(), status: 'Active', slotNumber: 2, templateData: 'DY50_FP_002B_SAMPLE_TEMPLATE_HEX_C8E41A1', enrolledTerminals: ['DEV_TERM_01'] }
-  ],
+  fingerprints: [],
   attendance: [],
   images: [],
   devices: [
@@ -88,13 +85,13 @@ const INITIAL_DATA: DatabaseSchema = {
       macAddress: '24:0A:C4:B8:3A:1E',
       firmwareVersion: 'AttendX-FW v2.4.1',
       esp32Heap: '296 KB Free / 520 KB Total',
-      fingerprintStatus: 'DY50 Ready (UART 57600)',
+      fingerprintStatus: 'SFM-V1.7 Ready (UART 57600)',
       cameraStatus: 'ESP32-S3-CAM Standby (SVGA OV2640)',
       keypadStatus: '4x4 Matrix Active',
       lcdStatus: '20x4 / 20x4 I2C LCD Ready (0x27)',
       lcdText: ['** ATTENDX TERMINAL **', 'Ready for Scan...', 'System: ONLINE', 'Net: CONNECTED'],
       voltage: '4.18V (Li-ion)',
-      enrolledFingerprints: 2
+      enrolledFingerprints: 0
     }
   ]
 };
@@ -333,15 +330,52 @@ export async function saveImageDoc(image: PINImage): Promise<void> {
 }
 
 /**
+ * Permanently removes all fingerprint templates from Firestore and resets terminal enrolled counters.
+ */
+export async function clearFingerprintsCollection(): Promise<{ deletedCount: number }> {
+  try {
+    const [fpsSnap, devsSnap] = await Promise.all([
+      getDocs(collection(firestore, 'fingerprints')),
+      getDocs(collection(firestore, 'devices'))
+    ]);
+
+    let deletedCount = 0;
+    for (const d of fpsSnap.docs) {
+      await deleteDoc(doc(firestore, 'fingerprints', d.id));
+      deletedCount++;
+    }
+
+    const devBatch = writeBatch(firestore);
+    for (const d of devsSnap.docs) {
+      const dev = d.data() as Device;
+      const maxSlots = dev.maxSlots || 10000;
+      devBatch.update(doc(firestore, 'devices', d.id), {
+        enrolledFingerprints: 0,
+        freeSlots: maxSlots,
+        fingerprintStatus: 'SFM-V1.7 Ready (UART 57600)'
+      });
+    }
+    await devBatch.commit();
+
+    return { deletedCount };
+  } catch (err) {
+    console.error('Error clearing fingerprints collection:', err);
+    throw err;
+  }
+}
+
+/**
  * Resets all sidebar page values across the persistent Firestore database.
  */
 export async function resetDatabaseToCleanState(): Promise<void> {
   try {
-    const [attSnap, imgsSnap, usersSnap, devsSnap] = await Promise.all([
+    const [attSnap, imgsSnap, usersSnap, devsSnap, fpsSnap, cmdsSnap] = await Promise.all([
       getDocs(collection(firestore, 'attendance')),
       getDocs(collection(firestore, 'images')),
       getDocs(collection(firestore, 'users')),
-      getDocs(collection(firestore, 'devices'))
+      getDocs(collection(firestore, 'devices')),
+      getDocs(collection(firestore, 'fingerprints')),
+      getDocs(collection(firestore, 'commands'))
     ]);
 
     for (const d of attSnap.docs) {
@@ -349,6 +383,12 @@ export async function resetDatabaseToCleanState(): Promise<void> {
     }
     for (const d of imgsSnap.docs) {
       await deleteDoc(doc(firestore, 'images', d.id));
+    }
+    for (const d of fpsSnap.docs) {
+      await deleteDoc(doc(firestore, 'fingerprints', d.id));
+    }
+    for (const d of cmdsSnap.docs) {
+      await deleteDoc(doc(firestore, 'commands', d.id));
     }
 
     const userBatch = writeBatch(firestore);
@@ -362,8 +402,13 @@ export async function resetDatabaseToCleanState(): Promise<void> {
 
     const devBatch = writeBatch(firestore);
     for (const d of devsSnap.docs) {
+      const dev = d.data() as Device;
+      const maxSlots = dev.maxSlots || 10000;
       devBatch.update(doc(firestore, 'devices', d.id), {
         pendingRecords: 0,
+        enrolledFingerprints: 0,
+        freeSlots: maxSlots,
+        fingerprintStatus: 'SFM-V1.7 Ready (UART 57600)',
         lastSync: new Date().toISOString(),
         lcdText: ['** ATTENDX TERMINAL **', 'Ready for Scan...', 'System: ZEROED [CLEAN]', 'Net: CONNECTED']
       });
@@ -453,24 +498,9 @@ export async function recordCommandResult(report: CommandResultReport): Promise<
     queuedCmd = await getCommandById(report.commandId);
   }
 
-  // 2. Resolve User ID (prefer command's user, then report's user, with fuzzy/keypad/slot mapping)
+  // 2. Resolve User ID (prefer command's user, then report's user: exact userId match only)
   let resolvedUserId = (report.userId || queuedCmd?.userId || '').trim().toUpperCase();
-  let matchedUser = db.users.find(u => u.id === resolvedUserId || u.id.toLowerCase() === resolvedUserId.toLowerCase());
-
-  if (!matchedUser && resolvedUserId) {
-    const numericPart = resolvedUserId.replace(/[^0-9]/g, '');
-    if (numericPart) {
-      matchedUser = db.users.find(u => u.id.replace(/[^0-9]/g, '') === numericPart);
-    }
-  }
-
-  if (!matchedUser && (report.slotNumber !== undefined || queuedCmd?.slotNumber !== undefined)) {
-    const slot = report.slotNumber ?? queuedCmd?.slotNumber;
-    if (slot !== undefined) {
-      const paddedSlot = String(slot).padStart(3, '0');
-      matchedUser = db.users.find(u => u.id.startsWith(paddedSlot));
-    }
-  }
+  let matchedUser = db.users.find(u => u.id.toUpperCase() === resolvedUserId);
 
   // Check if terminal report was for an invalid/non-existent user
   if (!matchedUser && report.type === 'ENROLL_FINGERPRINT' && report.status === 'success') {
@@ -503,6 +533,22 @@ export async function recordCommandResult(report: CommandResultReport): Promise<
   // 4. Update biometric template mapping in Firestore
   if (report.status === 'success') {
     if (report.type === 'ENROLL_FINGERPRINT' && finalUserId) {
+      // Deactivate any other Active record with the same slotNumber on that terminal (slot re-allocation by SFM sensor)
+      const collidingFps = db.fingerprints.filter(
+        f => f.status === 'Active' &&
+             f.slotNumber === targetSlot &&
+             f.userId !== finalUserId &&
+             (f.enrolledTerminals?.includes(cleanDeviceId) || !f.enrolledTerminals || f.enrolledTerminals.length === 0)
+      );
+
+      for (const collFp of collidingFps) {
+        collFp.status = 'Inactive';
+        if (collFp.enrolledTerminals) {
+          collFp.enrolledTerminals = collFp.enrolledTerminals.filter(t => t !== cleanDeviceId);
+        }
+        await setDoc(doc(firestore, 'fingerprints', collFp.id), sanitizeForFirestore(collFp), { merge: true });
+      }
+
       const existingFp = db.fingerprints.find(f => f.userId === finalUserId);
       const fpId = existingFp ? existingFp.id : `FP_${Date.now()}_${targetSlot}`;
 
@@ -512,7 +558,7 @@ export async function recordCommandResult(report: CommandResultReport): Promise<
         registrationDate: existingFp?.registrationDate || now,
         status: 'Active',
         slotNumber: targetSlot,
-        templateData: report.templateData || existingFp?.templateData || `DY50_FP_${finalUserId}_SLOT_${targetSlot}`,
+        templateData: report.templateData || existingFp?.templateData || `SFM_FP_${finalUserId}_SLOT_${targetSlot}`,
         enrolledTerminals: Array.from(new Set([...(existingFp?.enrolledTerminals || []), cleanDeviceId]))
       };
 
@@ -523,7 +569,7 @@ export async function recordCommandResult(report: CommandResultReport): Promise<
       if (devIndex !== -1) {
         const totalEnrolled = db.fingerprints.filter(f => f.status === 'Active' && f.enrolledTerminals?.includes(cleanDeviceId)).length;
         db.devices[devIndex].enrolledFingerprints = totalEnrolled;
-        db.devices[devIndex].freeSlots = Math.max(0, (db.devices[devIndex].maxSlots || 300) - totalEnrolled);
+        db.devices[devIndex].freeSlots = Math.max(0, (db.devices[devIndex].maxSlots || 10000) - totalEnrolled);
         db.devices[devIndex].lastSync = now;
         await setDoc(doc(firestore, 'devices', cleanDeviceId), sanitizeForFirestore(db.devices[devIndex]), { merge: true });
       }
@@ -541,7 +587,7 @@ export async function recordCommandResult(report: CommandResultReport): Promise<
       if (devIndex !== -1) {
         const totalEnrolled = db.fingerprints.filter(f => f.status === 'Active' && f.enrolledTerminals?.includes(cleanDeviceId)).length;
         db.devices[devIndex].enrolledFingerprints = totalEnrolled;
-        db.devices[devIndex].freeSlots = Math.max(0, (db.devices[devIndex].maxSlots || 300) - totalEnrolled);
+        db.devices[devIndex].freeSlots = Math.max(0, (db.devices[devIndex].maxSlots || 10000) - totalEnrolled);
         db.devices[devIndex].lastSync = now;
         await setDoc(doc(firestore, 'devices', cleanDeviceId), sanitizeForFirestore(db.devices[devIndex]), { merge: true });
       }

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { readDb, writeDb, deleteUserDoc, saveUserDoc } from '@/lib/db';
+import { readDb, writeDb, deleteUserDoc, saveUserDoc, queueCommandForDevice } from '@/lib/db';
 
 export async function PATCH(req: Request, props: { params: Promise<{ id: string }> }) {
   try {
@@ -29,19 +29,28 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
     
     // Fingerprint management
     if (body.enrollFingerprint) {
-      // Remove any existing active fingerprint for this user
-      db.fingerprints = db.fingerprints.filter(fp => fp.userId !== params.id);
-      const nextSlot = (Math.max(0, ...db.fingerprints.map(f => f.slotNumber || 0))) + 1;
-      db.fingerprints.push({
-        id: `FP_${String(Date.now()).slice(-6)}`,
-        userId: params.id,
-        registrationDate: new Date().toISOString(),
-        status: 'Active',
-        slotNumber: nextSlot,
-        templateData: `DY50_FP_${params.id}_TEMPLATE_HEX_${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
-        enrolledTerminals: body.terminalId ? [body.terminalId] : db.devices.map(d => d.id)
-      });
+      // Hardware SFM-V1.7 assigns slots dynamically (1-10000). Disallow fabricating fake database templates.
+      return NextResponse.json({
+        error: 'Hardware enrollment required: Fingerprint slots cannot be fabricated synthetically. Please initiate interactive terminal enrollment via the Dashboard or POST /api/devices/enrollment with action: QUEUE_ENROLLMENT.'
+      }, { status: 400 });
     } else if (body.removeFingerprint) {
+      const userFps = db.fingerprints.filter(fp => fp.userId === params.id && fp.status === 'Active');
+      for (const fp of userFps) {
+        if (fp.slotNumber !== undefined) {
+          const terminals = (fp.enrolledTerminals && fp.enrolledTerminals.length > 0)
+            ? fp.enrolledTerminals
+            : db.devices.map(d => d.id);
+          for (const termId of terminals) {
+            await queueCommandForDevice({
+              commandId: `cmd_del_${Date.now().toString(36)}_${fp.slotNumber}`,
+              type: 'DELETE_FINGERPRINT',
+              deviceId: termId,
+              userId: params.id,
+              slotNumber: fp.slotNumber
+            });
+          }
+        }
+      }
       db.fingerprints = db.fingerprints.filter(fp => fp.userId !== params.id);
     }
     
@@ -68,6 +77,25 @@ export async function DELETE(req: Request, props: { params: Promise<{ id: string
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
     
+    // Queue DELETE_FINGERPRINT commands on enrolled terminals for all active fingerprint slots
+    const userFps = db.fingerprints.filter(fp => fp.userId === params.id && fp.status === 'Active');
+    for (const fp of userFps) {
+      if (fp.slotNumber !== undefined) {
+        const terminals = (fp.enrolledTerminals && fp.enrolledTerminals.length > 0)
+          ? fp.enrolledTerminals
+          : db.devices.map(d => d.id);
+        for (const termId of terminals) {
+          await queueCommandForDevice({
+            commandId: `cmd_del_${Date.now().toString(36)}_${fp.slotNumber}`,
+            type: 'DELETE_FINGERPRINT',
+            deviceId: termId,
+            userId: params.id,
+            slotNumber: fp.slotNumber
+          });
+        }
+      }
+    }
+
     // Permanently remove user and fingerprints from Firestore
     await deleteUserDoc(params.id);
     
@@ -77,7 +105,7 @@ export async function DELETE(req: Request, props: { params: Promise<{ id: string
     
     await writeDb(db);
     
-    return NextResponse.json({ success: true, message: `User ${params.id} deleted successfully` });
+    return NextResponse.json({ success: true, message: `User ${params.id} deleted successfully and DELETE_FINGERPRINT queued for terminal(s).` });
   } catch (err) {
     console.error('Delete user error:', err);
     return NextResponse.json({ error: 'Failed to delete user' }, { status: 500 });

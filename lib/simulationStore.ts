@@ -39,15 +39,15 @@ const MOCK_DEVICES: Device[] = [
     macAddress: '24:0A:C4:B8:3A:1E',
     firmwareVersion: 'AttendX-FW v2.4.1 (Simulated)',
     esp32Heap: '312 KB Free / 520 KB Total',
-    fingerprintStatus: 'DY50 Optical Sensor Ready',
+    fingerprintStatus: 'SFM-V1.7 Optical Sensor Ready',
     cameraStatus: 'ESP32-CAM Active (SVGA OV2640)',
     keypadStatus: '4x4 Matrix Active (0-9 + A-D)',
     lcdStatus: '20x4 I2C LCD Ready (0x27)',
     lcdText: ['** ATTENDX [SIM] **', 'Ready for Scan...', 'System: SIMULATED', 'Net: HOTSPOT-DEMO'],
     voltage: '4.21V (Li-ion)',
     enrolledFingerprints: 4,
-    maxSlots: 300,
-    freeSlots: 296
+    maxSlots: 10000,
+    freeSlots: 9996
   },
   {
     id: 'DEV_TERM_02',
@@ -64,15 +64,15 @@ const MOCK_DEVICES: Device[] = [
     macAddress: '24:0A:C4:B8:77:2D',
     firmwareVersion: 'AttendX-FW v2.4.1 (Simulated)',
     esp32Heap: '284 KB Free / 520 KB Total',
-    fingerprintStatus: 'DY50 Optical Sensor Ready',
+    fingerprintStatus: 'SFM-V1.7 Optical Sensor Ready',
     cameraStatus: 'ESP32-CAM Standby',
     keypadStatus: '4x4 Matrix Active (0-9 + A-D)',
     lcdStatus: '20x4 I2C LCD Ready',
     lcdText: ['** ATTENDX LIB **', 'Place Finger/PIN', 'Battery: 88%', 'Net: LIB-WIFI-5G'],
     voltage: '3.98V (Li-ion)',
     enrolledFingerprints: 2,
-    maxSlots: 300,
-    freeSlots: 298
+    maxSlots: 10000,
+    freeSlots: 9998
   }
 ];
 

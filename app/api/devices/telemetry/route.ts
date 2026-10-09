@@ -30,12 +30,12 @@ export async function POST(req: Request) {
     const pendingRecords = typeof rawPending === 'number' ? rawPending : (rawPending ? Number(rawPending) : 0);
     const lcdText = body.lcdText || body.lcd_text;
     const firmwareVersion = body.firmwareVersion || body.firmware_version || 'AttendX-FW v2.4.1';
-    const fingerprintStatus = body.fingerprintStatus || body.fingerprint_status || 'DY50 Ready (UART 57600)';
+    const fingerprintStatus = body.fingerprintStatus || body.fingerprint_status || 'SFM-V1.7 Ready (UART 57600)';
     const cameraStatus = body.cameraStatus || body.camera_status || 'ESP32-S3-CAM Standby (SVGA OV2640)';
     const keypadStatus = body.keypadStatus || body.keypad_status || '4x4 Matrix Active (50ms debounce)';
     const lcdStatus = body.lcdStatus || body.lcd_status || '20x4 I2C LCD Ready (0x27)';
     const rawMax = body.maxSlots ?? body.max_slots;
-    const maxSlots = typeof rawMax === 'number' ? rawMax : (rawMax ? Number(rawMax) : 300);
+    const maxSlots = typeof rawMax === 'number' ? rawMax : (rawMax ? Number(rawMax) : 10000);
     const rawEnrolled = body.enrolledFingerprints ?? body.enrolled_fingerprints;
     const enrolledFingerprints = typeof rawEnrolled === 'number' ? rawEnrolled : (rawEnrolled ? Number(rawEnrolled) : undefined);
     const rawFree = body.freeSlots ?? body.free_slots;
