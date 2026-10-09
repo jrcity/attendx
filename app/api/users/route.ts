@@ -11,11 +11,13 @@ export async function GET() {
     
     // Enrich with auth setup status
     const enriched = sorted.map(user => {
-      const hasFingerprint = db.fingerprints.some(fp => fp.userId === user.id && fp.status === 'Active');
+      const activeFp = db.fingerprints.find(fp => fp.userId === user.id && fp.status === 'Active');
       const hasPin = !!user.pinHash;
       return {
         ...user,
-        hasFingerprint,
+        hasFingerprint: !!activeFp,
+        slotNumber: activeFp?.slotNumber,
+        enrolledTerminals: activeFp?.enrolledTerminals || [],
         hasPin
       };
     });

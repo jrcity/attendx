@@ -29,7 +29,9 @@ export async function GET(
 
     return NextResponse.json({
       exists: true,
-      hasFingerprint: !!activeFp
+      hasFingerprint: !!activeFp,
+      slotNumber: activeFp?.slotNumber,
+      enrolledTerminals: activeFp?.enrolledTerminals || []
     }, { status: 200 });
 
   } catch (err) {

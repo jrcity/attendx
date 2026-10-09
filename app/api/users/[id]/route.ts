@@ -57,9 +57,13 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
     await writeDb(db);
     await saveUserDoc(db.users[userIndex]);
     
+    const activeFp = db.fingerprints.find(fp => fp.userId === params.id && fp.status === 'Active');
+
     return NextResponse.json({
       ...db.users[userIndex],
-      hasFingerprint: db.fingerprints.some(fp => fp.userId === params.id && fp.status === 'Active'),
+      hasFingerprint: !!activeFp,
+      slotNumber: activeFp?.slotNumber,
+      enrolledTerminals: activeFp?.enrolledTerminals || [],
       hasPin: !!db.users[userIndex].pinHash
     });
   } catch (err) {

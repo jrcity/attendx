@@ -19,6 +19,8 @@ interface UserItem {
   totalAttendance: number
   lateOccurrences: number
   hasFingerprint: boolean
+  slotNumber?: number
+  enrolledTerminals?: string[]
   hasPin: boolean
 }
 
@@ -247,16 +249,18 @@ export default function UsersPage() {
             if (pollData.hasFingerprint) {
               clearInterval(pollInterval)
               clearInterval(timerInterval)
+              const confirmedSlot = pollData.slotNumber || targetSlot
+              setTargetSlot(confirmedSlot)
               setFpEnrollStatus('SUCCESS')
-              setFpStatusMsg(`Hardware confirmed! Successfully registered fingerprint for ${targetName} in Slot #${targetSlot}!`)
-              setUsers(prev => prev.map(u => u.id === targetId ? { ...u, hasFingerprint: true } : u))
-              showNotification(`Fingerprint registered for ${targetName} on terminal ${targetDev}.`)
+              setFpStatusMsg(`Hardware confirmed! Successfully registered fingerprint for ${targetName} in Slot #${confirmedSlot}!`)
+              setUsers(prev => prev.map(u => u.id === targetId ? { ...u, hasFingerprint: true, slotNumber: confirmedSlot } : u))
+              showNotification(`Fingerprint registered for ${targetName} (Slot #${confirmedSlot}) on terminal ${targetDev}.`)
               fetchUsers()
               return
             } else {
               // If not yet true, we assume it's still waiting on the user to scan
               setFpEnrollStatus('WAITING_FOR_FINGER')
-              setFpStatusMsg(`Terminal armed & active! Waiting for ${targetName} to place finger twice on DY50 optical sensor (Slot #${targetSlot})...`)
+              setFpStatusMsg(`Terminal armed & active! Waiting for ${targetName} to place finger twice on optical sensor...`)
             }
           }
         } catch {
@@ -588,21 +592,32 @@ export default function UsersPage() {
                           "p-1.5 rounded flex items-center space-x-1 text-xs font-medium border", 
                           user.hasFingerprint ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-slate-50 text-slate-400 border-slate-200"
                         )} 
-                        title={user.hasFingerprint ? "Fingerprint Registered" : "No Fingerprint"}
+                        title={user.hasFingerprint ? (user.slotNumber ? `Fingerprint Enrolled (Slot #${user.slotNumber})` : "Fingerprint Enrolled") : "No Fingerprint"}
                       >
                         <Fingerprint className="w-3.5 h-3.5" />
-                        <span>{user.hasFingerprint ? "FP" : "No FP"}</span>
+                        <span>{user.hasFingerprint ? (user.slotNumber ? `Slot #${user.slotNumber}` : "FP") : "No FP"}</span>
                       </div>
+                      {user.hasPin && (
+                        <div 
+                          className="p-1.5 rounded flex items-center space-x-1 text-xs font-medium border bg-blue-50 text-blue-700 border-blue-200"
+                          title="Keypad PIN Active"
+                        >
+                          <Hash className="w-3.5 h-3.5" />
+                          <span>PIN</span>
+                        </div>
+                      )}
+                      {/* "NO PIN" placeholder commented out from being seen
                       <div 
                         className={cn(
                           "p-1.5 rounded flex items-center space-x-1 text-xs font-medium border", 
                           user.hasPin ? "bg-blue-50 text-blue-700 border-blue-200" : "bg-slate-50 text-slate-400 border-slate-200"
                         )} 
-                        title={user.hasPin ? "PIN Active" : "No Slot Assigned"}
+                        title={user.hasPin ? "Keypad PIN Active" : "No PIN Configured"}
                       >
                         <Hash className="w-3.5 h-3.5" />
-                        <span>{user.hasPin ? "PIN" : "No Slot Assigned"}</span>
+                        <span>{user.hasPin ? "PIN" : "No PIN"}</span>
                       </div>
+                      */}
                     </div>
                   </td>
                   <td className="px-6 py-4 text-slate-700 font-medium">
@@ -721,7 +736,11 @@ export default function UsersPage() {
                               className="w-full px-3.5 py-2 text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 flex items-center space-x-2.5 transition-colors font-medium"
                             >
                               <Fingerprint className="w-4 h-4 text-emerald-600" />
-                              <span className="text-xs">{user.hasFingerprint ? 'Re-enroll to Terminal (DY50)' : 'Enroll to Terminal (DY50)'}</span>
+                              <span className="text-xs">
+                                {user.hasFingerprint 
+                                  ? (user.slotNumber ? `Re-enroll to Terminal (Slot #${user.slotNumber})` : 'Re-enroll to Terminal') 
+                                  : 'Enroll to Terminal'}
+                              </span>
                             </button>
                             <button 
                               type="button"
@@ -1015,15 +1034,17 @@ export default function UsersPage() {
                     <div className="flex items-center space-x-2.5">
                       <Fingerprint className={cn("w-4 h-4", viewingUser.hasFingerprint ? "text-emerald-600" : "text-slate-400")} />
                       <div>
-                        <p className="text-xs font-semibold text-slate-800">Biometric DY50 Fingerprint</p>
-                        <p className="text-[11px] text-slate-500">Optical sensor enrollment</p>
+                        <p className="text-xs font-semibold text-slate-800">Biometric Optical Fingerprint</p>
+                        <p className="text-[11px] text-slate-500">
+                          {viewingUser.slotNumber ? `Hardware Slot #${viewingUser.slotNumber} assigned` : "Optical sensor enrollment"}
+                        </p>
                       </div>
                     </div>
                     <span className={cn(
                       "text-xs font-semibold px-2 py-0.5 rounded",
                       viewingUser.hasFingerprint ? "bg-emerald-100 text-emerald-800" : "bg-slate-200 text-slate-600"
                     )}>
-                      {viewingUser.hasFingerprint ? "Enrolled" : "Not Enrolled"}
+                      {viewingUser.hasFingerprint ? (viewingUser.slotNumber ? `Enrolled (Slot #${viewingUser.slotNumber})` : "Enrolled") : "Not Enrolled"}
                     </span>
                   </div>
 
@@ -1180,14 +1201,14 @@ export default function UsersPage() {
                   <div className="p-4 bg-emerald-50/70 border border-emerald-200 rounded-xl space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-emerald-900 uppercase tracking-wider flex items-center">
-                        <Layers className="w-4 h-4 mr-1.5 text-emerald-600" /> Auto-Allocated EEPROM Slot
+                        <Layers className="w-4 h-4 mr-1.5 text-emerald-600" /> Optical Sensor Allocation
                       </span>
                       <span className="px-2.5 py-1 bg-emerald-600 text-white rounded-md text-xs font-mono font-bold shadow-xs">
-                        Slot #{targetSlot}
+                        {enrollFpUser?.slotNumber ? `Current: Slot #${enrollFpUser.slotNumber}` : `Auto Slot (1–10,000)`}
                       </span>
                     </div>
                     <p className="text-xs text-emerald-800 leading-relaxed">
-                      The firmware backend automatically coordinates available DY50 optical slots. When dispatched, terminal <strong className="font-mono">{selectedTerminalId}</strong> will arm and save this user&apos;s biometric template into <strong>Slot #{targetSlot}</strong>.
+                      The SFM-V1.7 optical sensor allocates free template slots internally upon finger scan confirmation. Terminal <strong className="font-mono">{selectedTerminalId}</strong> will arm and map this user to their physical slot upon verification.
                     </p>
                   </div>
 
