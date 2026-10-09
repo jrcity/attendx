@@ -39,14 +39,19 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <div className="flex h-full w-64 flex-col bg-[#162542] border-r border-[#21355a] flex-shrink-0">
       {/* Brand Header */}
-      <div className="flex h-16 items-center justify-between px-6 border-b border-[#21355a]">
-        <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 rounded-lg bg-[#136CFC] flex items-center justify-center font-bold text-white shadow-md shadow-[#136CFC]/30">
-            <Cpu className="w-5 h-5 text-white" />
+      <div className="flex h-16 items-center justify-between px-5 border-b border-[#21355a]">
+        <div className="flex items-center space-x-2.5">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#136CFC] to-[#162542] p-1.5 flex items-center justify-center border border-[#136CFC]/40 shadow-lg shadow-[#136CFC]/20">
+            <img src="/icons/icon.svg" alt="AttendX Logo" className="w-full h-full object-contain" />
           </div>
-          <h1 className="text-xl font-bold text-white tracking-tight">
-            ATTEND<span className="text-[#C4F84B]">X</span>
-          </h1>
+          <div>
+            <h1 className="text-lg font-extrabold text-white tracking-tight leading-none">
+              ATTEND<span className="text-[#C4F84B]">X</span>
+            </h1>
+            <span className="text-[9px] font-bold text-[#00f2fe] uppercase tracking-wider block mt-0.5">
+              by Team RAMP
+            </span>
+          </div>
         </div>
       </div>
 

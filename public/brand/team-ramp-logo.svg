@@ -1,0 +1,103 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 180" width="100%" height="100%">
+  <defs>
+    <radialGradient id="rampBg" cx="30%" cy="50%" r="70%">
+      <stop offset="0%" stop-color="#1e345e"/>
+      <stop offset="60%" stop-color="#162542"/>
+      <stop offset="100%" stop-color="#0c1526"/>
+    </radialGradient>
+
+    <linearGradient id="rampShieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#C4F84B"/>
+      <stop offset="50%" stop-color="#38ef7d"/>
+      <stop offset="100%" stop-color="#136CFC"/>
+    </linearGradient>
+
+    <linearGradient id="rampCheckGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#C4F84B"/>
+      <stop offset="100%" stop-color="#00f2fe"/>
+    </linearGradient>
+
+    <filter id="rampGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="6" result="blur1" />
+      <feMerge>
+        <feMergeNode in="blur1" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Container Box -->
+  <rect width="600" height="180" rx="24" fill="url(#rampBg)" stroke="#21355a" stroke-width="2"/>
+
+  <!-- Left Icon Crest -->
+  <g transform="translate(40, 20) scale(0.68)">
+    <!-- Outer Shield Crest -->
+    <path d="M 90 10
+             C 125 22, 155 22, 170 28
+             C 173 80, 163 130, 90 170
+             C 17 130, 7 80, 10 28
+             C 25 22, 55 22, 90 10 Z"
+          fill="#162542"
+          stroke="url(#rampShieldGrad)"
+          stroke-width="7"
+          stroke-linejoin="round"
+          filter="url(#rampGlow)" />
+
+    <!-- Fingerprint Arcs (Left) -->
+    <g stroke="url(#rampCheckGrad)" stroke-width="4" stroke-linecap="round" fill="none" opacity="0.95">
+      <path d="M 50 50 C 35 70, 35 100, 55 120 C 65 130, 75 135, 84 139" />
+      <path d="M 60 60 C 50 75, 50 97, 63 112" />
+      <path d="M 70 70 C 65 80, 65 95, 73 105" />
+    </g>
+
+    <!-- Circuit Traces (Right) -->
+    <g stroke="#00f2fe" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.9">
+      <path d="M 100 55 L 120 55 L 135 70 L 135 90" />
+      <circle cx="135" cy="90" r="3.5" fill="#C4F84B" />
+      <path d="M 110 75 L 130 75 L 140 85 L 140 110" />
+      <circle cx="140" cy="110" r="3.5" fill="#00f2fe" />
+    </g>
+
+    <!-- Verification Checkmark -->
+    <path d="M 58 92 L 84 118 L 138 56"
+          fill="none"
+          stroke="url(#rampCheckGrad)"
+          stroke-width="10"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          filter="url(#rampGlow)" />
+    <path d="M 58 92 L 84 118 L 138 56"
+          fill="none"
+          stroke="#ffffff"
+          stroke-width="3.5"
+          stroke-linecap="round"
+          stroke-linejoin="round" />
+  </g>
+
+  <!-- Typography Right Side -->
+  <g transform="translate(190, 48)">
+    <text font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="34" letter-spacing="3" fill="#ffffff">
+      ATTEND<tspan fill="#C4F84B">X</tspan>
+      <tspan font-size="14" font-weight="700" fill="#94a3b8" letter-spacing="2" dx="12">IOT PLATFORM</tspan>
+    </text>
+
+    <text y="42" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="17" letter-spacing="4" fill="#00f2fe">
+      ENGINEERED BY TEAM RAMP
+    </text>
+
+    <!-- Member Pills / Names -->
+    <g transform="translate(0, 62)">
+      <rect x="0" y="0" width="86" height="22" rx="11" fill="#136CFC" fill-opacity="0.2" stroke="#136CFC" stroke-opacity="0.4"/>
+      <text x="43" y="15" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-weight="700" font-size="10.5" fill="#93c5fd">REDEMPTION</text>
+
+      <rect x="94" y="0" width="76" height="22" rx="11" fill="#C4F84B" fill-opacity="0.15" stroke="#C4F84B" stroke-opacity="0.4"/>
+      <text x="132" y="15" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-weight="700" font-size="10.5" fill="#C4F84B">AMAZING</text>
+
+      <rect x="178" y="0" width="58" height="22" rx="11" fill="#136CFC" fill-opacity="0.2" stroke="#136CFC" stroke-opacity="0.4"/>
+      <text x="207" y="15" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-weight="700" font-size="10.5" fill="#93c5fd">MIKO</text>
+
+      <rect x="244" y="0" width="78" height="22" rx="11" fill="#C4F84B" fill-opacity="0.15" stroke="#C4F84B" stroke-opacity="0.4"/>
+      <text x="283" y="15" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-weight="700" font-size="10.5" fill="#C4F84B">PATIENCE</text>
+    </g>
+  </g>
+</svg>

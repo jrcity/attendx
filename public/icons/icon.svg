@@ -1,0 +1,117 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- Background Radial Gradient -->
+    <radialGradient id="bgSwappedGrad" cx="50%" cy="50%" r="65%">
+      <stop offset="0%" stop-color="#1c3058"/>
+      <stop offset="70%" stop-color="#162542"/>
+      <stop offset="100%" stop-color="#0a1220"/>
+    </radialGradient>
+
+    <!-- Neon Lime Solid Beam Gradient -->
+    <linearGradient id="solidLimeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#e8ff8c"/>
+      <stop offset="40%" stop-color="#C4F84B"/>
+      <stop offset="100%" stop-color="#8fe600"/>
+    </linearGradient>
+
+    <!-- Sapphire Blue Fingerprint Gradient -->
+    <linearGradient id="blueFingerprintGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="50%" stop-color="#136CFC"/>
+      <stop offset="100%" stop-color="#0b48b3"/>
+    </linearGradient>
+
+    <!-- Glow Filter -->
+    <filter id="swappedGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur1" />
+      <feMerge>
+        <feMergeNode in="blur1" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+
+    <filter id="ambientNeon" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="18" result="bloom" />
+      <feMerge>
+        <feMergeNode in="bloom" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- PWA Squircle Background -->
+  <rect width="512" height="512" rx="116" fill="url(#bgSwappedGrad)"/>
+  <rect width="508" height="508" x="2" y="2" rx="114" fill="none" stroke="#21355a" stroke-width="2" opacity="0.6"/>
+
+  <!-- Ambient Glow -->
+  <circle cx="210" cy="256" r="100" fill="#C4F84B" opacity="0.16" filter="url(#ambientNeon)"/>
+  <circle cx="310" cy="256" r="105" fill="#136CFC" opacity="0.18" filter="url(#ambientNeon)"/>
+
+  <!-- PURE COLOR-SWAPPED "X" EMBLEM -->
+  <g id="swapped-x">
+    <!-- 1. SOLID NEON LIME FORWARD CHEVRON / BEAM (Clean, Sharp, No Pattern) -->
+    <path d="M 125 125
+             L 195 125
+             L 285 256
+             L 195 387
+             L 125 387
+             L 225 256
+             Z"
+          fill="url(#solidLimeGrad)"
+          filter="url(#swappedGlow)" />
+
+    <!-- Specular Highlight along Lime Stroke -->
+    <path d="M 165 135 L 255 256 L 165 377"
+          stroke="#f7fee7"
+          stroke-width="3"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          opacity="0.6" />
+
+    <!-- 2. BIOMETRIC FINGERPRINT STROKE IN SAPPHIRE BLUE (Crossing to complete X) -->
+    <!-- Top-Right Blue Arm with Fingerprint Ridges -->
+    <g filter="url(#swappedGlow)">
+      <!-- Base contour of top-right blue arm -->
+      <path d="M 325 125
+               L 395 125
+               L 305 256
+               L 255 235
+               Z"
+            fill="url(#blueFingerprintGrad)"
+            opacity="0.25" />
+
+      <!-- Blue Biometric Fingerprint Minutiae Arcs (Top-Right) -->
+      <g stroke="url(#blueFingerprintGrad)" stroke-linecap="round" fill="none">
+        <path d="M 390 135 C 365 110, 315 120, 285 160 C 265 188, 255 220, 265 245" stroke-width="8.5" />
+        <path d="M 375 155 C 355 132, 320 140, 298 172 C 282 195, 275 220, 284 238" stroke-width="7.5" />
+        <path d="M 358 175 C 344 156, 322 160, 310 182 C 300 198, 296 216, 302 228" stroke-width="6.5" />
+        <path d="M 342 195 C 334 182, 322 185, 318 198 C 314 208, 315 218, 320 224" stroke-width="5" />
+        
+        <!-- Minutiae branch whiskers -->
+        <path d="M 380 185 C 368 172, 352 178, 345 190" stroke-width="6" />
+        <path d="M 395 165 C 388 155, 376 152, 368 155" stroke-width="7" />
+      </g>
+    </g>
+
+    <!-- Bottom-Right Blue Return Arm with Fingerprint Ridges -->
+    <g filter="url(#swappedGlow)">
+      <path d="M 305 256
+               L 395 387
+               L 325 387
+               L 255 285
+               Z"
+            fill="url(#blueFingerprintGrad)"
+            opacity="0.25" />
+
+      <g stroke="url(#blueFingerprintGrad)" stroke-linecap="round" fill="none">
+        <path d="M 390 377 C 365 370, 335 340, 295 285" stroke-width="8" />
+        <path d="M 372 377 C 350 365, 325 338, 285 275" stroke-width="7" />
+        <path d="M 352 377 C 335 362, 315 335, 278 265" stroke-width="6" />
+      </g>
+    </g>
+
+    <!-- Center Intersecting Precision Pulse Core -->
+    <circle cx="270" cy="256" r="7" fill="#ffffff" filter="url(#swappedGlow)"/>
+    <circle cx="270" cy="256" r="16" fill="#C4F84B" opacity="0.3" filter="url(#ambientNeon)"/>
+  </g>
+</svg>
