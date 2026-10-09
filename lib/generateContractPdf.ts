@@ -22,8 +22,7 @@ export function generateContractPdf(): jsPDF {
     doc.line(14, 12, 196, 12);
 
     doc.line(14, 285, 196, 285);
-    doc.text('CONFIDENTIAL & PROPRIETARY — ATTENDX FIRMWARE & BACKEND REVISION v2.4.1', 14, 290);
-    doc.text('© 2026 AttendX Systems LLC', 196, 290, { align: 'right' });
+    doc.text('© 2026 AttendX Systems • Team RAMP (Redemption, Amazing, Miko, Patience)', 196, 290, { align: 'right' });
   };
 
   // ==========================================

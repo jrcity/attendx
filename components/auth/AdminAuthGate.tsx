@@ -292,9 +292,9 @@ export default function AdminAuthGate({ children }: { children: React.ReactNode 
           {/* Left Side: Hardware Showcase Video along side the form */}
           <div className="hidden lg:flex lg:col-span-6 flex-col justify-between p-6 sm:p-7 rounded-3xl bg-[#162542]/90 border border-[#21355a] backdrop-blur-xl shadow-2xl shadow-[#162542]/70 overflow-hidden relative">
             <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 rounded-lg bg-[#136CFC] flex items-center justify-center font-bold text-white shadow-md shadow-[#136CFC]/30">
-                  <Cpu className="w-4 h-4 text-white" />
+              <div className="flex items-center space-x-2.5">
+                <div className="w-9 h-9 rounded-xl bg-[#0e192c] p-1 flex items-center justify-center border border-[#136CFC]/40 shadow-lg shadow-[#136CFC]/20">
+                  <img src="/brand/logo.png" alt="AttendX Logo" className="w-full h-full object-contain" />
                 </div>
                 <h2 className="text-lg font-bold text-white tracking-tight">
                   ATTEND<span className="text-[#C4F84B]">X</span> TERMINAL
@@ -366,8 +366,8 @@ export default function AdminAuthGate({ children }: { children: React.ReactNode 
             <div className="bg-[#162542]/90 border border-[#21355a] backdrop-blur-xl rounded-2xl p-6 sm:p-8 shadow-2xl shadow-[#162542]/50 text-slate-100">
           {/* Header */}
           <div className="text-center mb-6">
-            <div className="w-14 h-14 mx-auto rounded-2xl bg-[#136CFC] flex items-center justify-center shadow-lg shadow-[#136CFC]/30 mb-3 border border-blue-400/30">
-              <ShieldCheck className="w-8 h-8 text-white" />
+            <div className="w-16 h-16 mx-auto rounded-2xl bg-[#0e192c] p-2 flex items-center justify-center shadow-xl shadow-[#136CFC]/30 mb-3 border border-[#136CFC]/40">
+              <img src="/brand/logo.png" alt="AttendX Logo" className="w-full h-full object-contain" />
             </div>
             <h1 className="text-2xl font-bold tracking-tight text-white flex items-center justify-center space-x-2">
               <span>AttendX Admin Gate</span>

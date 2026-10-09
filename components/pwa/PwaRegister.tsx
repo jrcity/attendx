@@ -89,13 +89,13 @@ export function PwaRegister() {
         </div>
       )}
 
-      {/* Floating PWA Install Card */}
+      {/* Floating PWA Install Card - positioned at bottom-right to avoid sidebar overlap */}
       {showInstallBanner && deferredPrompt && (
-        <div className="fixed bottom-5 left-5 z-50 max-w-sm rounded-2xl bg-[#162542]/95 border border-[#136CFC]/40 p-4 shadow-2xl backdrop-blur-xl text-white animate-in fade-in slide-in-from-bottom duration-300">
+        <div className="fixed bottom-6 right-6 z-[70] max-w-sm w-[calc(100vw-3rem)] sm:w-auto rounded-2xl bg-[#162542]/95 border border-[#136CFC]/50 p-4 shadow-2xl shadow-black/60 backdrop-blur-xl text-white animate-in fade-in slide-in-from-bottom-4 duration-300">
           <div className="flex items-start justify-between mb-2">
             <div className="flex items-center space-x-2.5">
-              <div className="w-8 h-8 rounded-lg bg-[#136CFC] flex items-center justify-center font-bold text-white shadow-md shadow-[#136CFC]/30">
-                <span className="text-xs">AX</span>
+              <div className="w-9 h-9 rounded-xl bg-[#0e192c] p-1 flex items-center justify-center border border-[#136CFC]/40 shadow-lg shadow-[#136CFC]/20">
+                <img src="/brand/logo.png" alt="AttendX Logo" className="w-full h-full object-contain" />
               </div>
               <div>
                 <h4 className="text-xs font-bold text-white tracking-tight">Install AttendX App</h4>

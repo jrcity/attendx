@@ -20,8 +20,9 @@ export const metadata: Metadata = {
     title: 'AttendX',
   },
   icons: {
-    icon: '/icons/icon.svg',
-    apple: '/icons/icon.svg',
+    icon: '/brand/logo.png',
+    apple: '/icons/icon-192.png',
+    shortcut: '/brand/logo.png',
   },
   openGraph: {
     title: 'AttendX',

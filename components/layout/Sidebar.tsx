@@ -41,8 +41,8 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       {/* Brand Header */}
       <div className="flex h-16 items-center justify-between px-5 border-b border-[#21355a]">
         <div className="flex items-center space-x-2.5">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#136CFC] to-[#162542] p-1.5 flex items-center justify-center border border-[#136CFC]/40 shadow-lg shadow-[#136CFC]/20">
-            <img src="/icons/icon.svg" alt="AttendX Logo" className="w-full h-full object-contain" />
+          <div className="w-10 h-10 rounded-xl bg-[#0e192c] p-1 flex items-center justify-center border border-[#136CFC]/40 shadow-lg shadow-[#136CFC]/20">
+            <img src="/brand/logo.png" alt="AttendX Logo" className="w-full h-full object-contain" />
           </div>
           <div>
             <h1 className="text-lg font-extrabold text-white tracking-tight leading-none">
@@ -102,6 +102,12 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
             );
           })}
         </nav>
+      </div>
+
+      {/* Team RAMP Attribution Strip */}
+      <div className="px-4 py-2 border-t border-[#21355a] bg-[#0c1626]/60 flex items-center justify-between text-[10px]">
+        <span className="text-slate-300 font-semibold tracking-wide">Team RAMP</span>
+        <span className="text-[#C4F84B] font-mono text-[9px]">R • A • M • P</span>
       </div>
 
       {/* Mode Status Footer */}
