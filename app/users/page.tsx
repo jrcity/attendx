@@ -485,7 +485,7 @@ export default function UsersPage() {
     <div className="space-y-6 relative">
       <div className="flex justify-between items-end">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900">User Management</h2>
+          <h2 className="text-2xl font-bold tracking-tight text-[#136CFC]">User Management</h2>
           <p className="text-sm text-slate-500 mt-1">Manage students, staff, hardware credentials, and authentication methods.</p>
         </div>
         <button 
@@ -495,7 +495,7 @@ export default function UsersPage() {
             setUserIdError("");
             setIsModalOpen(true);
           }}
-          className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors bg-blue-600 text-white hover:bg-blue-700 h-10 px-4 py-2 shadow-sm w-full sm:w-auto mt-2 sm:mt-0"
+          className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors bg-[#136CFC] text-white hover:bg-[#0d5ad4] h-10 px-4 py-2 shadow-sm shadow-[#136CFC]/25 w-full sm:w-auto mt-2 sm:mt-0"
         >
           <Plus className="w-4 h-4 mr-2" /> Add User
         </button>
@@ -510,14 +510,14 @@ export default function UsersPage() {
               placeholder="Search by name or User ID..." 
               value={searchTerm}
               onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-              className="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              className="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-[#136CFC] bg-white"
             />
           </div>
           <div className="flex items-center space-x-2">
             <select 
               value={roleFilter}
               onChange={(e) => { setRoleFilter(e.target.value); setCurrentPage(1); }}
-              className="text-sm border border-slate-200 rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="text-sm border border-slate-200 rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-[#136CFC]"
             >
               <option>All Roles</option>
               <option>Student</option>
@@ -526,7 +526,7 @@ export default function UsersPage() {
             <select 
               value={statusFilter}
               onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}
-              className="text-sm border border-slate-200 rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="text-sm border border-slate-200 rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-[#136CFC]"
             >
               <option>All Status</option>
               <option>Active</option>
@@ -589,20 +589,20 @@ export default function UsersPage() {
                     <div className="flex items-center space-x-2">
                       <div 
                         className={cn(
-                          "p-1.5 rounded flex items-center space-x-1 text-xs font-medium border", 
-                          user.hasFingerprint ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-slate-50 text-slate-400 border-slate-200"
+                          "p-1.5 rounded flex items-center space-x-1 text-xs font-semibold border", 
+                          user.hasFingerprint ? "bg-[#C4F84B]/25 text-[#162542] border-[#C4F84B] shadow-xs" : "bg-slate-50 text-slate-400 border-slate-200"
                         )} 
                         title={user.hasFingerprint ? (user.slotNumber ? `Fingerprint Enrolled (Slot #${user.slotNumber})` : "Fingerprint Enrolled") : "No Fingerprint"}
                       >
-                        <Fingerprint className="w-3.5 h-3.5" />
+                        <Fingerprint className={cn("w-3.5 h-3.5", user.hasFingerprint ? "text-[#162542]" : "text-slate-400")} />
                         <span>{user.hasFingerprint ? (user.slotNumber ? `Slot #${user.slotNumber}` : "FP") : "No FP"}</span>
                       </div>
                       {user.hasPin && (
                         <div 
-                          className="p-1.5 rounded flex items-center space-x-1 text-xs font-medium border bg-blue-50 text-blue-700 border-blue-200"
+                          className="p-1.5 rounded flex items-center space-x-1 text-xs font-semibold border bg-[#136CFC]/10 text-[#136CFC] border-[#136CFC]/30"
                           title="Keypad PIN Active"
                         >
-                          <Hash className="w-3.5 h-3.5" />
+                          <Hash className="w-3.5 h-3.5 text-[#136CFC]" />
                           <span>PIN</span>
                         </div>
                       )}
@@ -823,7 +823,7 @@ export default function UsersPage() {
                 className={cn(
                   "px-3 py-1.5 text-xs font-medium rounded-md border transition-colors",
                   currentPage === pageNum
-                    ? "bg-blue-600 text-white border-blue-600 shadow-sm font-semibold"
+                    ? "bg-[#136CFC] text-white border-[#136CFC] shadow-sm font-semibold"
                     : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
                 )}
               >
@@ -867,7 +867,7 @@ export default function UsersPage() {
                     placeholder="e.g., Sarah Jenkins" 
                     value={newName}
                     onChange={(e) => setNewName(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-[#136CFC]"
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -881,7 +881,7 @@ export default function UsersPage() {
                       setNewUserId(suggested);
                       setUserIdError("");
                     }}
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white font-medium"
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-[#136CFC] bg-white font-medium"
                   >
                     <option value="Student">Student (Keypad Suffix [A])</option>
                     <option value="Staff">Staff (Keypad Suffix [B])</option>
@@ -913,7 +913,7 @@ export default function UsersPage() {
                     }}
                     className={cn(
                       "w-full px-3 py-2 text-sm font-mono font-bold tracking-wide border rounded-md focus:outline-none focus:ring-2",
-                      userIdError ? "border-red-300 focus:ring-red-500 bg-red-50/30 text-red-900" : "border-slate-300 focus:ring-blue-500 bg-white text-slate-900"
+                      userIdError ? "border-red-300 focus:ring-red-500 bg-red-50/30 text-red-900" : "border-slate-300 focus:ring-[#136CFC] bg-white text-slate-900"
                     )}
                   />
 
@@ -981,7 +981,7 @@ export default function UsersPage() {
                   <button 
                     type="submit" 
                     disabled={isAdding}
-                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md shadow-sm"
+                    className="px-4 py-2 text-sm font-medium text-white bg-[#136CFC] hover:bg-[#0d5ad4] rounded-md shadow-sm transition-colors"
                   >
                     {isAdding ? "Registering..." : "Create User"}
                   </button>
@@ -1098,7 +1098,7 @@ export default function UsersPage() {
                     required
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-[#136CFC]"
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -1106,7 +1106,7 @@ export default function UsersPage() {
                   <select 
                     value={editRole}
                     onChange={(e) => setEditRole(e.target.value as "Student" | "Staff" | "Admin")}
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-[#136CFC] bg-white"
                   >
                     <option value="Student">Student</option>
                     <option value="Staff">Staff</option>
@@ -1118,7 +1118,7 @@ export default function UsersPage() {
                   <select 
                     value={editStatus}
                     onChange={(e) => setEditStatus(e.target.value as "Active" | "Inactive")}
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-[#136CFC] bg-white"
                   >
                     <option value="Active">Active</option>
                     <option value="Inactive">Inactive</option>
@@ -1135,7 +1135,7 @@ export default function UsersPage() {
                   <button 
                     type="submit" 
                     disabled={isSavingEdit}
-                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md shadow-sm"
+                    className="px-4 py-2 text-sm font-medium text-white bg-[#136CFC] hover:bg-[#0d5ad4] rounded-md shadow-sm transition-colors"
                   >
                     {isSavingEdit ? "Saving..." : "Save Changes"}
                   </button>
@@ -1183,7 +1183,7 @@ export default function UsersPage() {
                     <select
                       value={selectedTerminalId}
                       onChange={(e) => setSelectedTerminalId(e.target.value)}
-                      className="w-full px-3 py-2.5 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white font-medium"
+                      className="w-full px-3 py-2.5 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#136CFC] bg-white font-medium"
                     >
                       {terminals.length > 0 ? (
                         terminals.map(term => (
@@ -1298,7 +1298,7 @@ export default function UsersPage() {
                   <button 
                     type="button" 
                     onClick={handleDispatchEnrollCommand}
-                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md shadow-sm"
+                    className="px-4 py-2 text-sm font-medium text-white bg-[#136CFC] hover:bg-[#0d5ad4] rounded-md shadow-sm transition-colors"
                   >
                     Retry Enrollment
                   </button>
@@ -1337,7 +1337,7 @@ export default function UsersPage() {
                     placeholder="Enter 4-6 digit PIN" 
                     value={pinValue}
                     onChange={(e) => setPinValue(e.target.value.replace(/\D/g, ''))}
-                    className="w-full px-3 py-2 text-sm font-mono border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-3 py-2 text-sm font-mono border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-[#136CFC]"
                   />
                 </div>
 
@@ -1350,7 +1350,7 @@ export default function UsersPage() {
                     placeholder="Confirm PIN" 
                     value={confirmPinValue}
                     onChange={(e) => setConfirmPinValue(e.target.value.replace(/\D/g, ''))}
-                    className="w-full px-3 py-2 text-sm font-mono border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-3 py-2 text-sm font-mono border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-[#136CFC]"
                   />
                 </div>
 
@@ -1372,7 +1372,7 @@ export default function UsersPage() {
                   <button 
                     type="submit" 
                     disabled={isSavingPin}
-                    className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-md shadow-sm"
+                    className="px-4 py-2 text-sm font-medium text-white bg-[#136CFC] hover:bg-[#0d5ad4] rounded-md shadow-sm transition-colors"
                   >
                     {isSavingPin ? "Saving..." : "Save Keypad PIN"}
                   </button>

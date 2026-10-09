@@ -227,7 +227,7 @@ export function EnrollFingerprintModal({
 
             if (pollData.status === 'PENDING_SCAN' || pollData.status === 'SCANNING' || pollData.status === 'EXECUTING') {
               setStatus('WAITING_FOR_FINGER')
-              setStatusMessage(`Terminal armed & scanning! Waiting for ${selectedUser.name} to place finger twice on DY50 optical sensor (Slot #${targetSlot})...`)
+              setStatusMessage(`Terminal armed & scanning! Waiting for ${selectedUser.name} to place finger twice on SFM-V1.7 optical sensor (Slot #${targetSlot})...`)
             } else if (pollData.status === 'COMPLETED' || pollData.status === 'SUCCESS') {
               clearInterval(pollInterval)
               clearInterval(timerInterval)
@@ -258,7 +258,7 @@ export function EnrollFingerprintModal({
           clearInterval(pollInterval)
           clearInterval(timerInterval)
           setStatus('FAILED')
-          setFailureReason('Enrollment timed out: No hardware scan completion received after 90 seconds. Ensure the ESP32 terminal is powered on, connected to Wi-Fi, and user places finger firmly twice on the DY50 sensor.')
+          setFailureReason('Enrollment timed out: No hardware scan completion received after 90 seconds. Ensure the ESP32 terminal is powered on, connected to Wi-Fi, and user places finger firmly twice on the SFM-V1.7 sensor.')
         }
       }, 2000)
 
@@ -281,7 +281,7 @@ export function EnrollFingerprintModal({
                 Enroll Fingerprint on Terminal
               </CardTitle>
               <p className="text-xs text-slate-500 mt-0.5">
-                Target Terminal: <strong className="font-mono text-slate-800">{device.name || device.id}</strong> ({device.id}) • Optical Sensor: DY50
+                Target Terminal: <strong className="font-mono text-slate-800">{device.name || device.id}</strong> ({device.id}) • Optical Sensor: SFM-V1.7
               </p>
             </div>
           </div>
@@ -323,7 +323,7 @@ export function EnrollFingerprintModal({
                   <select
                     value={selectedUserId}
                     onChange={(e) => handleUserChange(e.target.value)}
-                    className="w-full text-xs px-3 py-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium"
+                    className="w-full text-xs px-3 py-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#136CFC] font-medium"
                   >
                     {users.map(u => (
                       <option key={u.id} value={u.id}>
@@ -347,7 +347,7 @@ export function EnrollFingerprintModal({
                   max={maxSlots}
                   value={targetSlot}
                   onChange={(e) => setTargetSlot(Number(e.target.value))}
-                  className="w-full text-xs font-mono px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full text-xs font-mono px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#136CFC]"
                 />
               </div>
 
@@ -375,7 +375,7 @@ export function EnrollFingerprintModal({
                   type="button"
                   onClick={handleTriggerEnrollment}
                   disabled={!selectedUserId || loadingUsers}
-                  className="inline-flex items-center px-4 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 active:scale-95 rounded-lg shadow-sm transition-all disabled:opacity-50"
+                  className="inline-flex items-center px-4 py-2 text-xs font-semibold text-white bg-[#136CFC] hover:bg-[#0d5ad4] active:scale-95 rounded-lg shadow-sm shadow-[#136CFC]/25 transition-all disabled:opacity-50"
                 >
                   <Radio className="w-3.5 h-3.5 mr-1.5" />
                   Arm Terminal &amp; Begin Scan
@@ -386,10 +386,10 @@ export function EnrollFingerprintModal({
 
           {/* Progress / Waiting Screen */}
           {(status === 'ARMING' || status === 'PENDING_TERMINAL_PICKUP' || status === 'WAITING_FOR_FINGER') && (
-            <div className="p-6 bg-slate-900 text-white rounded-xl border border-slate-800 space-y-4 shadow-inner">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <span className="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center">
-                  <Radio className="w-4 h-4 mr-2 animate-pulse text-emerald-400" />
+            <div className="p-6 bg-[#162542] text-white rounded-xl border border-[#21355a] space-y-4 shadow-inner">
+              <div className="flex items-center justify-between border-b border-[#21355a] pb-3">
+                <span className="text-xs font-bold uppercase tracking-wider text-[#C4F84B] flex items-center">
+                  <Radio className="w-4 h-4 mr-2 animate-pulse text-[#C4F84B]" />
                   Live Terminal Biometric Session
                 </span>
                 <span className="text-xs font-mono text-slate-400">
@@ -398,17 +398,17 @@ export function EnrollFingerprintModal({
               </div>
 
               {/* LCD Terminal Display Preview */}
-              <div className="p-4 bg-black/80 rounded-lg border border-emerald-500/30 font-mono text-xs text-emerald-400 space-y-1 shadow-inner">
+              <div className="p-4 bg-black/90 rounded-lg border border-[#C4F84B]/40 font-mono text-xs text-[#C4F84B] space-y-1 shadow-inner">
                 <div>[LINE 1] ** ENROLL USER **</div>
                 <div>[LINE 2] {status === 'WAITING_FOR_FINGER' ? 'PLACE FINGER (1/2)' : 'DISPATCHING CMD...'}</div>
                 <div>[LINE 3] User ID: {selectedUserId} (Slot #{targetSlot})</div>
-                <div>[LINE 4] {status === 'WAITING_FOR_FINGER' ? 'DY50 Prism Active' : 'Polling Heartbeat...'}</div>
+                <div>[LINE 4] {status === 'WAITING_FOR_FINGER' ? 'SFM-V1.7 Prism Active' : 'Polling Heartbeat...'}</div>
               </div>
 
               <div className="space-y-1.5">
                 <p className="text-xs text-slate-200 font-medium">{statusMessage}</p>
                 <p className="text-[11px] text-slate-400">
-                  Terminal ID: <code className="text-emerald-400">{device.id}</code> • Please have the student/staff touch the blue optical prism on the terminal.
+                  Terminal ID: <code className="text-[#C4F84B]">{device.id}</code> • Please have the student/staff touch the optical sensor on the terminal.
                 </p>
               </div>
             </div>

@@ -1,7 +1,7 @@
 # AttendX Hardware Integration & Firmware Contract Specification
 
 ## Overview
-This document defines the complete API contract between AttendX physical terminals (ESP32-WROOM-32 with DY50 Optical Fingerprint Sensor and ESP32-CAM) and the Backend Cloud API.
+This document defines the complete API contract between AttendX physical terminals (ESP32-WROOM-32 with SFM-V1.7 Optical Fingerprint Sensor and ESP32-CAM) and the Backend Cloud API.
 
 All endpoints support both `camelCase` and `snake_case` keys, single JSON objects, direct JSON arrays (`[{...}]`), and batch objects (`{"batch": [...]}`).
 
@@ -66,7 +66,7 @@ All endpoints support both `camelCase` and `snake_case` keys, single JSON object
   - `POST /api/v1/attendance/check-in` or `POST /api/v1/attendance/checkin`
   - `POST /api/v1/attendance/check-out` or `POST /api/v1/attendance/checkout`
 
-#### A. Optical Fingerprint Scan (DY50 Match)
+#### A. Optical Fingerprint Scan (SFM-V1.7 Match)
 ```json
 {
   "deviceId": "DEV_TERM_01",

@@ -41,7 +41,7 @@ export function generateContractPdf(): jsPDF {
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(199, 210, 254);
   doc.text('Authoritative Technical Handshake Specification & Single Source of Truth', 20, 34);
-  doc.text('Target Hardware: ESP32 NodeMCU-32S • Sensor: DY50 Optical (UART) • Matrix: 4x4 Keypad • LCD: I2C 20x4', 20, 39);
+  doc.text('Target Hardware: ESP32 NodeMCU-32S • Sensor: SFM-V1.7 Optical (UART) • Matrix: 4x4 Keypad • LCD: I2C 20x4', 20, 39);
 
   let y = 50;
 
@@ -57,7 +57,7 @@ export function generateContractPdf(): jsPDF {
   const overviewText = 
     'This document defines the single authoritative communication standard between the AttendX cloud backend ' +
     'and the physical ESP32 attendance terminal firmware. The terminal operates as an intelligent edge controller ' +
-    'capable of real-time telemetry polling, optical fingerprint verification (DY50 via UART 57600 baud), ' +
+    'capable of real-time telemetry polling, optical fingerprint verification (SFM-V1.7 via UART 57600 baud), ' +
     '4x4 matrix keypad input, ESP32-CAM photo evidence streaming, and offline transaction buffering in non-volatile flash. ' +
     'All communications use single, canonical JSON endpoints without ambiguous aliases.';
   doc.text(doc.splitTextToSize(overviewText, 182), 14, y);
@@ -73,7 +73,7 @@ export function generateContractPdf(): jsPDF {
     startY: y,
     head: [['Subsystem', 'Component / Sensor', 'ESP32 GPIO Pins', 'Protocol / Baud', 'Operational Logic']],
     body: [
-      ['Biometrics', 'DY50 Optical Sensor', 'TX=GPIO 16, RX=GPIO 17', 'UART (57600 baud)', '500 DPI optical scan; 300 EEPROM template capacity.'],
+      ['Biometrics', 'SFM-V1.7 Optical Sensor', 'TX=GPIO 16, RX=GPIO 17', 'UART (57600 baud)', '500 DPI optical scan; 10,000 template capacity (slots 1-10000).'],
       ['Keypad', '4x4 Membrane Matrix', 'Rows: 13,12,14,27 | Cols: 26,25,33,32', 'GPIO Matrix (Active Low)', 'Debounce 50ms; digits 0-9 for ID, A/B/C/D for role flags.'],
       ['Display', '20x4 I2C Character LCD', 'SDA=GPIO 21, SCL=GPIO 22', 'I2C (0x27 / 100kHz)', 'Real-time state display, welcome/farewell messages, clock.'],
       ['Camera', 'ESP32-S3-CAM (OV2640)', 'TX=GPIO 1, RX=GPIO 3 / WiFi', 'UART / HTTP multipart', 'Captures SVGA JPEG snapshot on PIN keypad entry.'],
@@ -131,7 +131,7 @@ export function generateContractPdf(): jsPDF {
     body: [
       ['1', 'Admin / UI', 'POST /api/devices/enrollment', '{"action":"QUEUE_ENROLLMENT","deviceId":"DEV_TERM_01","userId":"001A","slotNumber":3}', 'Creates PENDING command in Firestore'],
       ['2', 'ESP32 Terminal', 'POST /api/devices/telemetry', 'Terminal sends telemetry heartbeat packet', 'Backend marks command DISPATCHED; returns command in JSON'],
-      ['3', 'Terminal Hardware', 'Local DY50 UART', 'LCD shows "** ENROLL MODE **"; sensor LED blinks blue', 'User places finger twice on optical sensor glass'],
+      ['3', 'Terminal Hardware', 'Local SFM-V1.7 UART', 'LCD shows "** ENROLL MODE **"; sensor LED blinks blue', 'User places finger twice on optical sensor glass'],
       ['4', 'ESP32 Terminal', 'POST /api/devices/commands/result', '{"deviceId":"DEV_TERM_01","commandId":"cmd_...","type":"ENROLL_FINGERPRINT","status":"success","userId":"001A","slotNumber":3}', 'Backend marks command COMPLETED; saves active fingerprint in DB'],
       ['5', 'Dashboard Modal', 'GET /api/devices/enrollment', 'Polls jobId every 2 seconds', 'Modal receives COMPLETED and shows green "Hardware Confirmed!"']
     ],
@@ -168,7 +168,7 @@ export function generateContractPdf(): jsPDF {
     '  "esp32Heap": "285 KB Free / 520 KB Total",\n' +
     '  "pendingRecords": 0,\n' +
     '  "firmwareVersion": "AttendX-FW v2.4.1",\n' +
-    '  "fingerprintStatus": "DY50 Ready (UART 57600)",\n' +
+    '  "fingerprintStatus": "SFM-V1.7 Ready (UART 57600)",\n' +
     '  "maxSlots": 300,\n' +
     '  "enrolledFingerprints": 2\n' +
     '}';
@@ -209,7 +209,7 @@ export function generateContractPdf(): jsPDF {
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(71, 85, 105);
   const checkinDesc = 
-    'When a user scans their fingerprint (DY50 optical) or inputs their Keypad User ID + PIN, ' +
+    'When a user scans their fingerprint (SFM-V1.7 optical) or inputs their Keypad User ID + PIN, ' +
     'the terminal immediately transmits the transaction to the canonical endpoint POST /api/attendance/checkin. ' +
     'The backend automatically evaluates attendance direction (IN vs OUT), late thresholds (9:00 AM), ' +
     'updates Firestore records, and returns LCD display text for the terminal.';
@@ -221,7 +221,7 @@ export function generateContractPdf(): jsPDF {
     head: [['Field Name', 'Type', 'Required', 'Description & Accepted Format']],
     body: [
       ['deviceId', 'string', 'Yes', 'Physical terminal ID (e.g. "DEV_TERM_01", "DEV_TERM_02").'],
-      ['slotNumber', 'number', 'Conditional', 'DY50 EEPROM slot (1-300). Used if authMode is "fingerprint".'],
+      ['slotNumber', 'number', 'Conditional', 'SFM-V1.7 slot ID (1-10000). Used if authMode is "fingerprint".'],
       ['userId', 'string', 'Conditional', 'Keypad User ID (e.g. "001A", "002B"). Required for PIN mode.'],
       ['authMode', 'string', 'Yes', '"fingerprint" or "pin". Defaults to fingerprint if slotNumber present.'],
       ['direction', 'string', 'Optional', '"IN" or "OUT". If omitted, backend toggles based on daily state.'],

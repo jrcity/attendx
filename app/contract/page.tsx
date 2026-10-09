@@ -47,17 +47,17 @@ export default function ContractBlueprintPage() {
   return (
     <div className="space-y-8 max-w-6xl mx-auto pb-16">
       {/* Top Header & Actions Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl text-white shadow-xl border border-slate-800">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 bg-[#162542] rounded-2xl text-white shadow-xl border border-[#21355a]">
         <div className="space-y-1.5">
           <div className="flex items-center space-x-2">
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-indigo-500/30 text-indigo-300 border border-indigo-500/40">
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-[#136CFC]/20 text-[#136CFC] border border-[#136CFC]/40">
               Protocol v2.4.1 Specification
             </span>
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-500/30 text-emerald-300 border border-emerald-500/40">
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-[#C4F84B]/20 text-[#C4F84B] border border-[#C4F84B]/40">
               Approved Single Source of Truth
             </span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
             Firmware & Backend Handshake Blueprint
           </h1>
           <p className="text-xs sm:text-sm text-slate-300 max-w-2xl">
@@ -69,7 +69,7 @@ export default function ContractBlueprintPage() {
         <div className="flex items-center space-x-3 flex-shrink-0">
           <button
             onClick={() => window.print()}
-            className="px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold border border-slate-700 shadow-sm flex items-center transition-all"
+            className="px-3.5 py-2.5 bg-[#21355a] hover:bg-[#2a4373] text-white rounded-xl text-xs font-bold border border-[#2d497d] shadow-sm flex items-center transition-all"
             title="Print or Save via Browser"
           >
             <Printer className="w-4 h-4 mr-1.5 text-slate-300" />
@@ -79,7 +79,7 @@ export default function ContractBlueprintPage() {
           <button
             onClick={handleDownloadPdf}
             disabled={downloadingPdf}
-            className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white rounded-xl text-xs font-bold shadow-lg shadow-indigo-600/30 flex items-center transition-all"
+            className="px-5 py-2.5 bg-[#136CFC] hover:bg-[#0d5ad4] active:scale-95 text-white rounded-xl text-xs font-bold shadow-lg shadow-[#136CFC]/30 flex items-center transition-all"
           >
             <Download className="w-4 h-4 mr-2" />
             {downloadingPdf ? 'Generating PDF...' : 'Download Official PDF'}
@@ -108,7 +108,7 @@ export default function ContractBlueprintPage() {
             </div>
             <div>
               <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Biometric Sensor</p>
-              <p className="text-sm font-bold text-slate-800">DY50 Optical (UART)</p>
+              <p className="text-sm font-bold text-slate-800">SFM-V1.7 Optical (UART)</p>
             </div>
           </CardContent>
         </Card>
@@ -166,10 +166,10 @@ export default function ContractBlueprintPage() {
               <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
                 <tr>
                   <td className="p-3 font-bold text-emerald-700">Biometrics</td>
-                  <td className="p-3">DY50 Optical Sensor</td>
+                  <td className="p-3">SFM-V1.7 Optical Sensor</td>
                   <td className="p-3 font-mono text-indigo-700">TX=GPIO 16, RX=GPIO 17</td>
                   <td className="p-3">UART (57600 baud)</td>
-                  <td className="p-3">Captures 500 DPI ridge map, compares templates against internal 300 EEPROM slots.</td>
+                  <td className="p-3">Captures 500 DPI ridge map, compares templates against internal 10,000 slots.</td>
                 </tr>
                 <tr>
                   <td className="p-3 font-bold text-blue-700">Matrix Keypad</td>
@@ -389,7 +389,7 @@ export default function ContractBlueprintPage() {
         </CardHeader>
         <CardContent className="p-6 space-y-4">
           <p className="text-xs text-slate-600 leading-relaxed">
-            When a user touches the DY50 optical glass or punches their Keypad User ID + PIN on the 4x4 matrix, 
+            When a user touches the SFM-V1.7 optical glass or punches their Keypad User ID + PIN on the 4x4 matrix, 
             the terminal sends the event directly to <code className="font-mono font-bold text-indigo-700">POST /api/attendance/checkin</code>.
           </p>
 

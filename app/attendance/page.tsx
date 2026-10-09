@@ -52,7 +52,7 @@ export default function AttendanceLiveFeed() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900">Live Attendance Feed</h2>
+          <h2 className="text-2xl font-bold tracking-tight text-[#136CFC]">Live Attendance Feed</h2>
           <p className="text-xs text-slate-500 mt-1">
             {isSimulationMode 
               ? 'Real-time mock stream for demonstration. Zero DB operations.'
@@ -77,9 +77,9 @@ export default function AttendanceLiveFeed() {
               </button>
             </div>
           ) : (
-            <div className="flex items-center space-x-2 bg-white border border-slate-200 px-3 py-1.5 rounded-full shadow-sm">
-              <span className="flex items-center text-emerald-600 font-semibold">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 mr-2 animate-pulse"></span>
+            <div className="flex items-center space-x-2 bg-[#162542] border border-[#21355a] px-3 py-1.5 rounded-full shadow-xs">
+              <span className="flex items-center text-[#C4F84B] font-semibold">
+                <span className="w-2 h-2 rounded-full bg-[#C4F84B] mr-2 animate-pulse"></span>
                 Hardware Polling (3s Live)
               </span>
             </div>

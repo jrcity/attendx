@@ -162,7 +162,7 @@ export function ConfigureTerminalModal({
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. Science Lab North"
-                  className="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-800"
+                  className="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#136CFC]"
                 />
               </div>
 
@@ -175,7 +175,7 @@ export function ConfigureTerminalModal({
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
                   placeholder="e.g. Building C, Room 204"
-                  className="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-800"
+                  className="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#136CFC]"
                 />
               </div>
             </div>
@@ -192,9 +192,9 @@ export function ConfigureTerminalModal({
                   max="1000"
                   value={maxSlots}
                   onChange={(e) => setMaxSlots(Number(e.target.value))}
-                  className="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-800"
+                  className="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#136CFC]"
                 />
-                <p className="text-[11px] text-slate-500">DY50 default is 300 templates</p>
+                <p className="text-[11px] text-slate-500">SFM-V1.7 module capacity (slots 1-10000)</p>
               </div>
 
               <div className="space-y-1.5">
@@ -207,7 +207,7 @@ export function ConfigureTerminalModal({
                   max="300"
                   value={heartbeatInterval}
                   onChange={(e) => setHeartbeatInterval(Number(e.target.value))}
-                  className="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-800"
+                  className="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#136CFC]"
                 />
                 <p className="text-[11px] text-slate-500">Telemetry heartbeat period (15–30s recommended)</p>
               </div>
@@ -222,7 +222,7 @@ export function ConfigureTerminalModal({
                     type="checkbox"
                     checked={pinFallbackEnabled}
                     onChange={(e) => setPinFallbackEnabled(e.target.checked)}
-                    className="w-4 h-4 text-slate-800 rounded border-slate-300 focus:ring-slate-800"
+                    className="w-4 h-4 text-slate-800 rounded border-slate-300 focus:ring-[#136CFC]"
                   />
                   <div className="text-xs">
                     <p className="font-bold text-slate-800">4×4 Keypad Fallback</p>
@@ -235,7 +235,7 @@ export function ConfigureTerminalModal({
                     type="checkbox"
                     checked={cameraEvidenceEnabled}
                     onChange={(e) => setCameraEvidenceEnabled(e.target.checked)}
-                    className="w-4 h-4 text-slate-800 rounded border-slate-300 focus:ring-slate-800"
+                    className="w-4 h-4 text-slate-800 rounded border-slate-300 focus:ring-[#136CFC]"
                   />
                   <div className="text-xs">
                     <p className="font-bold text-slate-800">ESP32-CAM Snapshot</p>
@@ -257,7 +257,7 @@ export function ConfigureTerminalModal({
                   value={lcdLine1}
                   onChange={(e) => setLcdLine1(e.target.value)}
                   placeholder="Line 1 (Max 20 chars)"
-                  className="text-xs font-mono px-3 py-1.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-800"
+                  className="text-xs font-mono px-3 py-1.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#136CFC]"
                 />
                 <input
                   type="text"
@@ -265,7 +265,7 @@ export function ConfigureTerminalModal({
                   value={lcdLine2}
                   onChange={(e) => setLcdLine2(e.target.value)}
                   placeholder="Line 2 (Max 20 chars)"
-                  className="text-xs font-mono px-3 py-1.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-800"
+                  className="text-xs font-mono px-3 py-1.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#136CFC]"
                 />
               </div>
             </div>
@@ -281,7 +281,7 @@ export function ConfigureTerminalModal({
               <button
                 type="submit"
                 disabled={saving}
-                className="inline-flex items-center px-4 py-2 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 active:scale-95 rounded-lg shadow-sm transition-all"
+                className="inline-flex items-center px-4 py-2 text-xs font-semibold text-white bg-[#136CFC] hover:bg-[#0d5ad4] active:scale-95 rounded-lg shadow-sm shadow-[#136CFC]/25 transition-all"
               >
                 <Save className="w-3.5 h-3.5 mr-1.5" />
                 {saving ? 'Saving...' : 'Save Configuration'}

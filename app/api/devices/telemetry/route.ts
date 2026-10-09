@@ -94,7 +94,7 @@ export async function POST(req: Request) {
           commandId: cmd.commandId,
           type: 'ENROLL_FINGERPRINT' as const,
           userId: cmd.userId,
-          slotNumber: cmd.slotNumber  // Required: DY50 EEPROM slot for template storage
+          slotNumber: cmd.slotNumber  // Required: SFM-V1.7 slot ID for template storage
         };
       } else if (cmd.type === 'DELETE_FINGERPRINT') {
         return {

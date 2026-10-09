@@ -37,15 +37,15 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const { isSimulationMode, toggleSimulationMode } = useSystemMode();
 
   return (
-    <div className="flex h-full w-64 flex-col bg-slate-900 border-r border-slate-800 flex-shrink-0">
+    <div className="flex h-full w-64 flex-col bg-[#162542] border-r border-[#21355a] flex-shrink-0">
       {/* Brand Header */}
-      <div className="flex h-16 items-center justify-between px-6 border-b border-slate-800">
+      <div className="flex h-16 items-center justify-between px-6 border-b border-[#21355a]">
         <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center font-bold text-white shadow-md">
-            <Cpu className="w-5 h-5 text-indigo-100" />
+          <div className="w-8 h-8 rounded-lg bg-[#136CFC] flex items-center justify-center font-bold text-white shadow-md shadow-[#136CFC]/30">
+            <Cpu className="w-5 h-5 text-white" />
           </div>
           <h1 className="text-xl font-bold text-white tracking-tight">
-            ATTEND<span className="text-indigo-400">X</span>
+            ATTEND<span className="text-[#C4F84B]">X</span>
           </h1>
         </div>
       </div>
@@ -80,8 +80,8 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
                 onClick={() => onNavigate?.()}
                 className={cn(
                   isActive
-                    ? 'bg-indigo-600 text-white'
-                    : 'text-slate-300 hover:bg-slate-800 hover:text-white',
+                    ? 'bg-[#136CFC] text-white shadow-sm shadow-[#136CFC]/30'
+                    : 'text-slate-300 hover:bg-[#21355a]/70 hover:text-white',
                   'group flex items-center rounded-lg px-3 py-2.5 text-xs font-semibold transition-colors'
                 )}
               >
@@ -100,7 +100,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       </div>
 
       {/* Mode Status Footer */}
-      <div className="p-4 border-t border-slate-800 bg-slate-950/60 flex flex-col gap-2">
+      <div className="p-4 border-t border-[#21355a] bg-[#0e192c]/70 flex flex-col gap-2">
         {isSimulationMode ? (
           <div>
             <div className="flex items-center space-x-2 text-xs font-semibold text-purple-400">
@@ -113,10 +113,10 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           </div>
         ) : (
           <div>
-            <div className="flex items-center space-x-2 text-xs font-semibold text-emerald-400">
+            <div className="flex items-center space-x-2 text-xs font-semibold text-[#C4F84B]">
               <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#C4F84B] opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#C4F84B]"></span>
               </span>
               <span>Cloud Firestore (Live)</span>
             </div>
@@ -130,7 +130,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         <button
           type="button"
           onClick={toggleSimulationMode}
-          className="md:hidden mt-2 w-full py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] text-slate-300 font-semibold border border-slate-700 transition-colors"
+          className="md:hidden mt-2 w-full py-1.5 rounded bg-[#21355a] hover:bg-[#28416d] text-[10px] text-slate-200 font-semibold border border-[#2d497c] transition-colors"
         >
           Switch to {isSimulationMode ? 'Live DB' : 'Simulation'}
         </button>

@@ -1,1 +1,47 @@
 @import "tailwindcss";
+
+@theme {
+  --color-brand-blue: #136CFC;
+  --color-brand-blue-hover: #0e56cc;
+  --color-brand-lime: #C4F84B;
+  --color-brand-lime-hover: #b0e33e;
+  --color-brand-navy: #162542;
+  --color-brand-navy-light: #21355a;
+  --color-brand-navy-dark: #0e192c;
+}
+
+:root {
+  --brand-blue: #136CFC;
+  --brand-blue-hover: #0e56cc;
+  --brand-lime: #C4F84B;
+  --brand-navy: #162542;
+  --brand-navy-light: #21355a;
+}
+
+/* Global Input, Select, and Textarea Focus Theming */
+input:not([type="checkbox"]):not([type="radio"]):focus,
+select:focus,
+textarea:focus {
+  border-color: #136CFC !important;
+  box-shadow: 0 0 0 2px rgba(19, 108, 252, 0.25) !important;
+  outline: none !important;
+}
+
+/* Checkbox and Radio Accent Theming */
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: #136CFC;
+}
+
+/* Global Selection styling */
+::selection {
+  background-color: #136CFC;
+  color: #ffffff;
+}
+
+/* Global interactive transitions for buttons & links */
+button, a {
+  transition-property: color, background-color, border-color, box-shadow, transform;
+  transition-duration: 150ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}

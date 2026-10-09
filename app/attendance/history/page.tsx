@@ -120,7 +120,7 @@ export default function HistoryPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900">Attendance History Logs</h2>
+          <h2 className="text-2xl font-bold tracking-tight text-[#136CFC]">Attendance History Logs</h2>
           <p className="text-sm text-slate-500 mt-1">
             {isSimulationMode ? 'Simulated transaction ledger. Zero DB operations.' : 'Audit trail of all biometric and keypad authentication events received from ESP32 terminals.'}
           </p>
@@ -150,7 +150,7 @@ export default function HistoryPage() {
               placeholder="Search by name or User ID..." 
               value={searchTerm}
               onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-              className="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              className="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-[#136CFC] bg-white"
             />
           </div>
 
@@ -159,12 +159,12 @@ export default function HistoryPage() {
               type="date" 
               value={dateFilter}
               onChange={(e) => { setDateFilter(e.target.value); setCurrentPage(1); }}
-              className="text-sm border border-slate-200 rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="text-sm border border-slate-200 rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-[#136CFC]"
             />
             <select 
               value={roleFilter}
               onChange={(e) => { setRoleFilter(e.target.value); setCurrentPage(1); }}
-              className="text-sm border border-slate-200 rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="text-sm border border-slate-200 rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-[#136CFC]"
             >
               <option>All Roles</option>
               <option>Student</option>
@@ -173,10 +173,10 @@ export default function HistoryPage() {
             <select 
               value={modeFilter}
               onChange={(e) => { setModeFilter(e.target.value); setCurrentPage(1); }}
-              className="text-sm border border-slate-200 rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="text-sm border border-slate-200 rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-[#136CFC]"
             >
               <option>All Methods</option>
-              <option value="fingerprint">Fingerprint (DY50)</option>
+              <option value="fingerprint">Fingerprint (SFM-V1.7)</option>
               <option value="pin">Keypad PIN</option>
             </select>
           </div>
@@ -311,7 +311,7 @@ export default function HistoryPage() {
                 className={cn(
                   "px-3 py-1.5 text-xs font-medium rounded-md border transition-colors",
                   currentPage === pageNum
-                    ? "bg-blue-600 text-white border-blue-600 shadow-sm font-semibold"
+                    ? "bg-[#136CFC] text-white border-[#136CFC] shadow-sm font-semibold"
                     : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
                 )}
               >

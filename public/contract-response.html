@@ -303,7 +303,7 @@
         </div>
         <h1>ESP32 Firmware Contract & API Reference Manual</h1>
         <p style="margin-top: 0.35rem; font-size: 0.88rem; color: #475569;">
-          Production-grade interface specification for ESP32-WROOM-32, DY50 Optical Biometrics, and ESP32-CAM.
+          Production-grade interface specification for ESP32-WROOM-32, SFM-V1.7 Optical Biometrics, and ESP32-CAM.
         </p>
       </div>
       <div style="text-align: right;">
@@ -325,7 +325,7 @@
       </div>
       <div class="meta-item">
         <strong>Supported Hardware</strong>
-        ESP32 (WROOM-32) + DY50 + ESP32-CAM
+        ESP32 (WROOM-32) + SFM-V1.7 + ESP32-CAM
       </div>
       <div class="meta-item">
         <strong>Keypad ID Standard</strong>
@@ -342,7 +342,7 @@
       <strong style="font-size: 0.95rem; display: block; margin-bottom: 0.35rem;">Engineering Notice to Firmware Developers:</strong>
       If <strong>only telemetry was working</strong> during initial bench testing, this contract details why and confirms the full fixes deployed:
       <ol style="margin-left: 1.25rem; margin-top: 0.4rem; font-size: 0.88rem; line-height: 1.5;">
-        <li><strong>Check-in Unmapped Slots & Array Payloads:</strong> DY50 fingerprint scans transmit optical <code>slotNumber</code>. Previously, if the slot was unmapped or if the terminal transmitted a JSON array <code>[{...}]</code> from SPIFFS flash, the server returned an ambiguous result without LCD feedback. The backend now accepts raw objects, raw arrays, or wrapped batches, and returns immediate LCD messages (e.g., <code>"WELCOME, JOHN!"</code> or <code>"SLOT NOT FOUND"</code>).</li>
+        <li><strong>Check-in Unmapped Slots & Array Payloads:</strong> SFM-V1.7 fingerprint scans transmit optical <code>slotNumber</code>. Previously, if the slot was unmapped or if the terminal transmitted a JSON array <code>[{...}]</code> from SPIFFS flash, the server returned an ambiguous result without LCD feedback. The backend now accepts raw objects, raw arrays, or wrapped batches, and returns immediate LCD messages (e.g., <code>"WELCOME, JOHN!"</code> or <code>"SLOT NOT FOUND"</code>).</li>
         <li><strong>ESP32-CAM Evidence Linkage:</strong> Previously the photo endpoint required <code>userId</code>. ESP32-CAM firmware often only has <code>attendanceId</code> returned from check-in. The backend now correlates photos using <code>attendanceId</code> directly without requiring redundant user ID extraction.</li>
         <li><strong>Flexible Casing:</strong> All endpoints accept both standard <code>camelCase</code> (e.g. <code>deviceId</code>, <code>slotNumber</code>) and C-struct <code>snake_case</code> (e.g. <code>device_id</code>, <code>slot_number</code>).</li>
       </ol>
@@ -369,7 +369,7 @@
         <tr>
           <td><strong>2. Attendance Check-In</strong><br><small style="color: #64748b;">On finger scan / PIN key</small></td>
           <td><code>POST</code><br><code>/api/attendance/checkin</code></td>
-          <td><code>slotNumber</code> (DY50 optical) OR <code>userId</code> (keypad), deviceId, timestamp. Supports SPIFFS burst replay.</td>
+          <td><code>slotNumber</code> (SFM-V1.7 optical) OR <code>userId</code> (keypad), deviceId, timestamp. Supports SPIFFS burst replay.</td>
           <td><code>201 Created</code> with <code>attendanceId</code>, <code>displayMessage</code> for LCD/OLED, and user details.</td>
         </tr>
         <tr>
@@ -415,8 +415,8 @@
   "esp32Heap": "284 KB Free / 520 KB",     // [OPTIONAL] string: ESP.getFreeHeap()
   "pendingRecords": 0,                     // [OPTIONAL] number: Count of offline records in SPIFFS
   "firmwareVersion": "AttendX-FW v2.4.1",  // [OPTIONAL] string: Embedded build tag
-  "maxSlots": 300,                         // [OPTIONAL] number: DY50 capacity (default 300)
-  "enrolledFingerprints": 2,               // [OPTIONAL] number: Stored templates count in DY50
+  "maxSlots": 300,                         // [OPTIONAL] number: SFM-V1.7 capacity (slots 1-10000)
+  "enrolledFingerprints": 2,               // [OPTIONAL] number: Stored templates count in SFM-V1.7
   "lcdText": [                             // [OPTIONAL] array of 2-4 strings for LCD verification
     "** ATTENDX TERMINAL **",
     "Ready for Scan...",
@@ -454,11 +454,11 @@
     </p>
 
     <div class="tab-bar">
-      <div class="tab-title">Request Payload: Optical Fingerprint Scan (DY50 Match)</div>
+      <div class="tab-title">Request Payload: Optical Fingerprint Scan (SFM-V1.7 Match)</div>
     </div>
     <pre><code>{
   "deviceId": "DEV_TERM_01",                     // [REQUIRED] string: Terminal identifier
-  "slotNumber": 2,                               // [REQUIRED for DY50] number: Slot (1-300) matched by DY50
+  "slotNumber": 2,                               // [REQUIRED for SFM-V1.7] number: Slot (1-10000) matched by SFM-V1.7
   "authMode": "fingerprint",                     // [REQUIRED] "fingerprint"
   "timestamp": "2026-09-24T08:52:14.000+01:00",  // [REQUIRED] ISO string or numeric epoch seconds
   "offlineBuffered": false                       // [OPTIONAL] boolean: true if replayed from SPIFFS flash
@@ -602,7 +602,7 @@
   "status": "success",
   "source": "dashboard",
   "userId": "001A",
-  "slotNumber": 3,                                    // DY50 slot where fingerprint was stored
+  "slotNumber": 3,                                    // SFM-V1.7 slot where fingerprint was stored
   "timestamp": "2026-09-24T09:15:30.000Z"
 }
 
@@ -659,10 +659,10 @@
     <div class="alert alert-warning avoid-break">
       <strong>Crucial ESP32 Firmware Rules:</strong>
       <ul style="margin-left: 1.25rem; margin-top: 0.4rem; font-size: 0.88rem;">
-        <li><strong>Command Deduplication:</strong> If biometric scanning takes 40 seconds, the same command might re-appear in the next 30-second telemetry response. Store an active <code>in_progress_cmd_id</code> so the DY50 does not restart an active scan.</li>
-        <li><strong>DY50 25-Second Sensor Timeout:</strong> Never block the ESP32 main loop indefinitely while waiting for finger placement. Set a 25-second countdown. If no finger is detected, post <code>status: "error", errorReason: "sensor_timeout"</code> and restore the default LCD screen.</li>
+        <li><strong>Command Deduplication:</strong> If biometric scanning takes 40 seconds, the same command might re-appear in the next 30-second telemetry response. Store an active <code>in_progress_cmd_id</code> so the SFM-V1.7 does not restart an active scan.</li>
+        <li><strong>SFM-V1.7 25-Second Sensor Timeout:</strong> Never block the ESP32 main loop indefinitely while waiting for finger placement. Set a 25-second countdown. If no finger is detected, post <code>status: "error", errorReason: "sensor_timeout"</code> and restore the default LCD screen.</li>
         <li><strong>Zero Retries on Dropped Photos:</strong> If an ESP32-CAM photo upload encounters a Wi-Fi drop mid-stream, <strong>do not retry or lock the terminal</strong>. The backend safely retains the check-in and logs <code>evidenceStatus: "upload_dropped"</code>.</li>
-        <li><strong>Slot 0 Guard:</strong> DY50 Slot <code>0</code> is strictly reserved by hardware for "Search / No Match". All valid user slots are <code>1</code> through <code>300</code>.</li>
+        <li><strong>Slot 0 Guard:</strong> SFM-V1.7 Slot <code>0</code> is strictly reserved by hardware for "Search / No Match". All valid user slots are <code>1</code> through <code>10000</code>.</li>
       </ul>
     </div>
 

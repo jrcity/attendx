@@ -58,7 +58,7 @@ export function TopNav() {
           <Search className="pointer-events-none absolute inset-y-0 left-0 h-full w-4 text-slate-400 pl-1" />
           <input
             id="search-field"
-            className="block h-9 w-full rounded-lg border-0 bg-slate-50 py-1 pl-8 pr-3 text-xs text-slate-900 placeholder:text-slate-400 focus:bg-white focus:ring-1 focus:ring-indigo-500"
+            className="block h-9 w-full rounded-lg border-0 bg-slate-50 py-1 pl-8 pr-3 text-xs text-slate-900 placeholder:text-slate-400 focus:bg-white focus:ring-1 focus:ring-[#136CFC]"
             placeholder="Search student, staff, slot, terminal..."
             type="search"
           />
@@ -73,11 +73,11 @@ export function TopNav() {
             onClick={() => isSimulationMode && toggleSimulationMode()}
             className={`flex items-center space-x-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
               !isSimulationMode 
-                ? 'bg-emerald-600 text-white shadow-sm' 
+                ? 'bg-[#162542] text-white border border-[#21355a] shadow-sm' 
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <span className={`w-2 h-2 rounded-full ${!isSimulationMode ? 'bg-emerald-300 animate-pulse' : 'bg-slate-400'}`} />
+            <span className={`w-2 h-2 rounded-full ${!isSimulationMode ? 'bg-[#C4F84B] animate-pulse' : 'bg-slate-400'}`} />
             <span>Live Hardware &amp; DB</span>
           </button>
 

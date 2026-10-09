@@ -292,7 +292,7 @@ export default function DevicesPage() {
           macAddress: `24:0A:C4:F1:2A:${(30 + activeDevices.length).toString(16).toUpperCase()}`,
           firmwareVersion: 'AttendX-FW v2.4.1',
           esp32Heap: '290 KB Free / 520 KB Total',
-          fingerprintStatus: 'DY50 Ready (UART 57600)',
+          fingerprintStatus: 'SFM-V1.7 Ready (UART 57600)',
           cameraStatus: 'ESP32-S3-CAM Standby (SVGA OV2640)',
           keypadStatus: '4x4 Matrix Active (50ms debounce)',
           lcdStatus: '20x4 I2C LCD Ready (0x27)',
@@ -446,7 +446,7 @@ export default function DevicesPage() {
       {/* Header & Quick Terminal Health Stats */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900">Device & Terminal Management</h2>
+          <h2 className="text-2xl font-bold tracking-tight text-[#136CFC]">Device & Terminal Management</h2>
           <p className="text-sm text-slate-500 mt-1">
             Monitor, configure, and inspect physical ESP32 AttendX terminals, biometric sensors, and peripheral hardware.
           </p>
@@ -468,7 +468,7 @@ export default function DevicesPage() {
           </button>
           <button
             onClick={() => { setIsAddModalOpen(true); setAddError(""); }}
-            className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors bg-blue-600 text-white hover:bg-blue-700 h-10 px-3 sm:px-4 py-2 shadow-sm w-full sm:w-auto whitespace-nowrap mt-2 sm:mt-0"
+            className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors bg-[#136CFC] text-white hover:bg-[#0d5ad4] h-10 px-3 sm:px-4 py-2 shadow-sm shadow-[#136CFC]/25 w-full sm:w-auto whitespace-nowrap mt-2 sm:mt-0"
           >
             <Plus className="w-4 h-4 mr-2" /> Register New Terminal
           </button>
@@ -533,7 +533,7 @@ export default function DevicesPage() {
           </p>
           <button
             onClick={() => setIsAddModalOpen(true)}
-            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm"
+            className="mt-4 px-4 py-2 bg-[#136CFC] text-white rounded-md text-sm font-medium hover:bg-[#0d5ad4] transition-colors shadow-sm shadow-[#136CFC]/25"
           >
             Register First Terminal
           </button>
@@ -659,7 +659,7 @@ export default function DevicesPage() {
                       <div className="flex items-center space-x-2 p-2 rounded bg-white border border-slate-200">
                         <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
                         <span className="font-medium text-slate-700 truncate">
-                          DY50 ({device.enrolledFingerprints !== undefined ? device.enrolledFingerprints : 2} Enrolled)
+                          SFM-V1.7 ({device.enrolledFingerprints !== undefined ? device.enrolledFingerprints : 2} Enrolled)
                         </span>
                       </div>
                       <div className="flex items-center space-x-2 p-2 rounded bg-white border border-slate-200">
@@ -732,7 +732,7 @@ export default function DevicesPage() {
                       {/* 1. Enrol Fingerprint Button */}
                       <button
                         onClick={() => setDeviceToEnroll(device)}
-                        className="inline-flex items-center px-3 py-1.5 text-xs font-semibold rounded-md bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition-colors"
+                        className="inline-flex items-center px-3 py-1.5 text-xs font-semibold rounded-md bg-[#136CFC] hover:bg-[#0d5ad4] text-white shadow-sm shadow-[#136CFC]/25 transition-colors"
                         title="Enroll a user fingerprint directly on this terminal's optical scanner"
                       >
                         <Fingerprint className="w-3.5 h-3.5 mr-1.5" /> Enrol Fingerprint
@@ -889,11 +889,11 @@ export default function DevicesPage() {
                   </div>
                 </div>
 
-                {/* 2. DY50 Fingerprint Sensor */}
+                {/* 2. SFM-V1.7 Fingerprint Sensor */}
                 <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 space-y-2">
                   <div className="flex items-center space-x-2 text-slate-800 font-bold text-xs uppercase tracking-wider">
                     <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                    <span>DY50 Optical Sensor</span>
+                    <span>SFM-V1.7 Optical Sensor</span>
                   </div>
                   <div className="text-xs space-y-1 text-slate-600">
                     <div className="flex justify-between"><span className="text-slate-500">Resolution:</span><span className="font-semibold text-slate-800">500 DPI Optical Prism</span></div>
@@ -1004,7 +1004,7 @@ export default function DevicesPage() {
                     placeholder="e.g., DEV_TERM_02"
                     value={newDeviceId}
                     onChange={(e) => setNewDeviceId(e.target.value)}
-                    className="w-full px-3 py-2 text-sm font-mono border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 text-sm font-mono border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-[#136CFC]"
                   />
                 </div>
 
@@ -1015,7 +1015,7 @@ export default function DevicesPage() {
                     placeholder="e.g., Library West Entrance Terminal"
                     value={newDeviceName}
                     onChange={(e) => setNewDeviceName(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-[#136CFC]"
                   />
                 </div>
 
@@ -1026,7 +1026,7 @@ export default function DevicesPage() {
                     placeholder="e.g., Science Complex, Ground Floor"
                     value={newDeviceLocation}
                     onChange={(e) => setNewDeviceLocation(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-[#136CFC]"
                   />
                 </div>
 
@@ -1035,7 +1035,7 @@ export default function DevicesPage() {
                   <select
                     value={newPowerStatus}
                     onChange={(e) => setNewPowerStatus(e.target.value as "AC" | "Battery")}
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-[#136CFC] bg-white"
                   >
                     <option value="AC">AC Mains Adapter (with 18650 Battery Backup)</option>
                     <option value="Battery">Stand-alone Li-ion Battery</option>
@@ -1053,7 +1053,7 @@ export default function DevicesPage() {
                   <button
                     type="submit"
                     disabled={actionLoading === "adding"}
-                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md shadow-sm"
+                    className="px-4 py-2 text-sm font-medium text-white bg-[#136CFC] hover:bg-[#0d5ad4] rounded-md shadow-sm shadow-[#136CFC]/25 transition-colors"
                   >
                     {actionLoading === "adding" ? "Registering..." : "Connect Terminal"}
                   </button>
@@ -1117,7 +1117,7 @@ export default function DevicesPage() {
                     Biometric Enrollment & Hardware Provisioning
                   </CardTitle>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    Terminal: <strong className="text-slate-800">{selectedBioSyncDevice.name || selectedBioSyncDevice.id}</strong> ({selectedBioSyncDevice.id}) • Optical Sensor: DY50
+                    Terminal: <strong className="text-slate-800">{selectedBioSyncDevice.name || selectedBioSyncDevice.id}</strong> ({selectedBioSyncDevice.id}) • Optical Sensor: SFM-V1.7
                   </p>
                 </div>
               </div>
@@ -1142,7 +1142,7 @@ export default function DevicesPage() {
                   </span>
                 </div>
                 <p className="text-indigo-800 leading-relaxed">
-                  When a new terminal is added to AttendX, it can synchronize all enrolled fingerprint templates stored in the central database directly into its on-board DY50 optical flash memory. Alternatively, you can trigger live on-terminal enrollment for any database user right here.
+                  When a new terminal is added to AttendX, it can synchronize all enrolled fingerprint templates stored in the central database directly into its on-board SFM-V1.7 optical flash memory. Alternatively, you can trigger live on-terminal enrollment for any database user right here.
                 </p>
               </div>
 
@@ -1179,7 +1179,7 @@ export default function DevicesPage() {
                       [LINE 3] User ID: {scanningUserId}
                     </div>
                     <div>
-                      [LINE 4] {scanStep === 'capturing' ? 'Pass 2/2: Verifying' : scanStep === 'saved' ? 'Synced to Central DB' : 'DY50 UART Ready'}
+                      [LINE 4] {scanStep === 'capturing' ? 'Pass 2/2: Verifying' : scanStep === 'saved' ? 'Synced to Central DB' : 'SFM-V1.7 UART Ready'}
                     </div>
                   </div>
 
@@ -1436,7 +1436,7 @@ export default function DevicesPage() {
                       <span className="text-xs text-emerald-700 font-semibold">Zero Collision EEPROM Allocation</span>
                     </div>
                     <p className="text-xs text-emerald-900 leading-relaxed">
-                      The backend automatically coordinates slot allocation (e.g. Slot #1, #2, #3...). The terminal receives the enrollment command during its telemetry heartbeat, captures the finger scan twice on the DY50 prism, and reports completion to the backend.
+                      The backend automatically coordinates slot allocation (e.g. Slot #1, #2, #3...). The terminal receives the enrollment command during its telemetry heartbeat, captures the finger scan twice on the SFM-V1.7 prism, and reports completion to the backend.
                     </p>
                   </div>
 
@@ -1508,12 +1508,12 @@ export default function DevicesPage() {
                       <span className="text-xs text-slate-500">Real-time Scan or Offline SPIFFS Sync</span>
                     </div>
                     <p className="text-xs text-slate-600 leading-relaxed">
-                      When the DY50 optical sensor matches a finger or keypad PIN is entered, the ESP32 transmits the scan event to the canonical check-in endpoint.
+                      When the SFM-V1.7 optical sensor matches a finger or keypad PIN is entered, the ESP32 transmits the scan event to the canonical check-in endpoint.
                     </p>
                   </div>
 
                   <div>
-                    <p className="text-xs font-bold text-slate-700 mb-1.5">Sending via Slot Number (DY50 Optical):</p>
+                    <p className="text-xs font-bold text-slate-700 mb-1.5">Sending via Slot Number (SFM-V1.7 Optical):</p>
                     <pre className="p-4 bg-slate-900 text-slate-100 rounded-xl text-xs font-mono overflow-x-auto leading-relaxed border border-slate-800">
                       {`// Optical Fingerprint Match:
 {

@@ -21,7 +21,7 @@ export interface Fingerprint {
   registrationDate: string;
   status: 'Active' | 'Inactive';
   slotNumber?: number;
-  templateData?: string; // Hex or base64 representation of DY50 512-byte template
+  templateData?: string; // Hex or base64 representation of SFM-V1.7 template
   enrolledTerminals?: string[]; // Terminal IDs where this template is installed
 }
 

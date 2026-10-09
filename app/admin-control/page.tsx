@@ -357,11 +357,11 @@ export default function AdminControlPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <div className="flex items-center space-x-2.5">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-600 flex items-center justify-center text-white shadow-md shadow-indigo-600/20">
-              <ShieldCheck className="w-5 h-5" />
+            <div className="w-10 h-10 rounded-xl bg-[#136CFC] flex items-center justify-center text-white shadow-md shadow-[#136CFC]/25">
+              <ShieldCheck className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
+              <h1 className="text-2xl font-bold tracking-tight text-[#136CFC] flex items-center gap-2">
                 Admin Control & Authorization
               </h1>
               <p className="text-sm text-slate-500">
@@ -376,13 +376,13 @@ export default function AdminControlPage() {
             onClick={() => setShowEmailJsConfig(!showEmailJsConfig)}
             className="px-3.5 py-2 rounded-lg bg-white border border-slate-200 text-slate-700 text-xs font-semibold hover:bg-slate-50 shadow-sm flex items-center space-x-1.5 transition-all"
           >
-            <Sliders className="w-4 h-4 text-indigo-600" />
+            <Sliders className="w-4 h-4 text-[#136CFC]" />
             <span>EmailJS Setup</span>
           </button>
 
           <button
             onClick={() => setIsAddModalOpen(true)}
-            className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-md shadow-indigo-600/25 flex items-center space-x-1.5 transition-all"
+            className="px-4 py-2 rounded-lg bg-[#136CFC] hover:bg-[#0d5ad4] text-white text-xs font-semibold shadow-md shadow-[#136CFC]/25 flex items-center space-x-1.5 transition-all"
           >
             <UserPlus className="w-4 h-4" />
             <span>Provision Administrator</span>
@@ -586,7 +586,7 @@ export default function AdminControlPage() {
                   placeholder="e.g. service_attendx"
                   value={emailJsServiceId}
                   onChange={(e) => setEmailJsServiceId(e.target.value)}
-                  className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#136CFC]"
                 />
               </div>
 
@@ -597,7 +597,7 @@ export default function AdminControlPage() {
                   placeholder="e.g. template_attendx_otp"
                   value={emailJsTemplateId}
                   onChange={(e) => setEmailJsTemplateId(e.target.value)}
-                  className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#136CFC]"
                 />
               </div>
 
@@ -608,7 +608,7 @@ export default function AdminControlPage() {
                   placeholder="e.g. user_xxx or public_xxx"
                   value={emailJsPublicKey}
                   onChange={(e) => setEmailJsPublicKey(e.target.value)}
-                  className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#136CFC]"
                 />
               </div>
             </div>
@@ -623,7 +623,7 @@ export default function AdminControlPage() {
               </button>
               <button
                 type="submit"
-                className="px-4 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-700 shadow-sm"
+                className="px-4 py-1.5 bg-[#136CFC] text-white text-xs font-semibold rounded-lg hover:bg-[#0d5ad4] shadow-sm shadow-[#136CFC]/25"
               >
                 Save Credentials
               </button>
@@ -763,7 +763,7 @@ export default function AdminControlPage() {
           <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
             <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
               <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white">
+                <div className="w-8 h-8 rounded-lg bg-[#136CFC] flex items-center justify-center text-white">
                   <UserPlus className="w-4 h-4" />
                 </div>
                 <h3 className="font-bold text-slate-900 text-sm">Provision New Administrator</h3>
@@ -789,7 +789,7 @@ export default function AdminControlPage() {
                     value={newEmail}
                     onChange={(e) => setNewEmail(e.target.value)}
                     placeholder="e.g. colleague@university.edu"
-                    className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#136CFC]"
                   />
                 </div>
                 <p className="text-[11px] text-slate-500 mt-1">
@@ -807,7 +807,7 @@ export default function AdminControlPage() {
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
                   placeholder="e.g. Dr. Sarah Jenkins"
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#136CFC]"
                 />
               </div>
 
@@ -818,7 +818,7 @@ export default function AdminControlPage() {
                 <select
                   value={newRole}
                   onChange={(e) => setNewRole(e.target.value as Administrator['role'])}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#136CFC]"
                 >
                   <option value="Security Officer">Security Officer</option>
                   <option value="Attendance Supervisor">Attendance Supervisor</option>
@@ -835,7 +835,7 @@ export default function AdminControlPage() {
                   value={newNotes}
                   onChange={(e) => setNewNotes(e.target.value)}
                   placeholder="e.g. Faculty of Engineering Biometric Lead"
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#136CFC]"
                 />
               </div>
 
@@ -850,7 +850,7 @@ export default function AdminControlPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm flex items-center space-x-1.5 disabled:opacity-50"
+                  className="px-4 py-2 bg-[#136CFC] hover:bg-[#0d5ad4] text-white text-xs font-semibold rounded-lg shadow-sm shadow-[#136CFC]/25 flex items-center space-x-1.5 disabled:opacity-50"
                 >
                   {isSubmitting ? (
                     <>

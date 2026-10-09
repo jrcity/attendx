@@ -274,41 +274,106 @@ export default function AdminAuthGate({ children }: { children: React.ReactNode 
       {/* Video Overlay Background */}
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
         <video
-          src="/overlay-attendx.mp4"
+          src="/vid/demo.mp4"
           autoPlay
           loop
           muted
           playsInline
-          className="w-full h-full object-cover opacity-60 scale-105"
+          className="w-full h-full object-cover opacity-30 scale-105"
         />
         {/* Cinematic dark glassmorphic vignette */}
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/75 to-slate-900/80 backdrop-blur-[2px]" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-indigo-900/20 via-slate-950/60 to-slate-950" />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/80 to-[#162542]/75 backdrop-blur-[1px]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#136CFC]/15 via-[#162542]/60 to-slate-950" />
       </div>
 
-      {/* Foreground Container */}
-      <div className="relative z-10 w-full max-w-md px-4 py-8">
-        {/* Terminal Hardware Badge */}
-        <div className="flex justify-center mb-4">
-          <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-slate-900/80 border border-indigo-500/30 text-indigo-300 text-xs font-medium shadow-xl backdrop-blur-md">
-            <Cpu className="w-3.5 h-3.5 text-indigo-400" />
-            <span>ESP32-S3 Biometric Security Barrier</span>
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          </div>
-        </div>
+      {/* Foreground Container: Side-by-Side Layout on Desktop */}
+      <div className="relative z-10 w-full max-w-5xl px-4 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+          {/* Left Side: Hardware Showcase Video along side the form */}
+          <div className="hidden lg:flex lg:col-span-6 flex-col justify-between p-6 sm:p-7 rounded-3xl bg-[#162542]/90 border border-[#21355a] backdrop-blur-xl shadow-2xl shadow-[#162542]/70 overflow-hidden relative">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 rounded-lg bg-[#136CFC] flex items-center justify-center font-bold text-white shadow-md shadow-[#136CFC]/30">
+                  <Cpu className="w-4 h-4 text-white" />
+                </div>
+                <h2 className="text-lg font-bold text-white tracking-tight">
+                  ATTEND<span className="text-[#C4F84B]">X</span> TERMINAL
+                </h2>
+              </div>
+            </div>
 
-        {/* Main Card */}
-        <div className="bg-slate-900/80 border border-slate-800/80 backdrop-blur-xl rounded-2xl p-6 sm:p-8 shadow-2xl shadow-indigo-950/40 text-slate-100">
+            {/* Video Player Display */}
+            <div className="relative w-full aspect-video rounded-2xl overflow-hidden border border-[#21355a] bg-black shadow-inner mb-4">
+              <video
+                src="/vid/demo.mp4"
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute bottom-2.5 left-2.5 right-2.5 px-3 py-1.5 rounded-xl bg-slate-950/80 backdrop-blur-md border border-white/10 flex items-center justify-between text-[11px]">
+                <span className="text-slate-300 font-mono">ESP32 3D Architecture</span>
+                <span className="text-[#C4F84B] font-semibold">Exploded Subsystem View</span>
+              </div>
+            </div>
+
+            {/* Subsystem Specifications */}
+            <div className="grid grid-cols-2 gap-2.5 text-xs">
+              <div className="p-2.5 rounded-xl bg-[#0e192c]/70 border border-[#21355a] flex items-center space-x-2">
+                <Fingerprint className="w-4 h-4 text-[#C4F84B] shrink-0" />
+                <div>
+                  <p className="font-semibold text-slate-200 text-[11px]">SFM-V1.7 Biometrics</p>
+                  <p className="text-[10px] text-slate-400">Optical Sensor</p>
+                </div>
+              </div>
+              <div className="p-2.5 rounded-xl bg-[#0e192c]/70 border border-[#21355a] flex items-center space-x-2">
+                <Camera className="w-4 h-4 text-[#136CFC] shrink-0" />
+                <div>
+                  <p className="font-semibold text-slate-200 text-[11px]">ESP32-CAM</p>
+                  <p className="text-[10px] text-slate-400">Optical Evidence</p>
+                </div>
+              </div>
+              <div className="p-2.5 rounded-xl bg-[#0e192c]/70 border border-[#21355a] flex items-center space-x-2">
+                <Terminal className="w-4 h-4 text-[#C4F84B] shrink-0" />
+                <div>
+                  <p className="font-semibold text-slate-200 text-[11px]">20×4 LCD Display</p>
+                  <p className="text-[10px] text-slate-400">Live User Feedback</p>
+                </div>
+              </div>
+              <div className="p-2.5 rounded-xl bg-[#0e192c]/70 border border-[#21355a] flex items-center space-x-2">
+                <Cpu className="w-4 h-4 text-[#136CFC] shrink-0" />
+                <div>
+                  <p className="font-semibold text-slate-200 text-[11px]">NodeMCU-32S</p>
+                  <p className="text-[10px] text-slate-400">Dual-Core Microcontroller</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Side: Auth Form Container */}
+          <div className="w-full lg:col-span-6 max-w-md mx-auto">
+            {/* Terminal Hardware Badge (Mobile/Tablet) */}
+            <div className="flex justify-center mb-4 lg:hidden">
+              <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-[#162542]/90 border border-[#136CFC]/30 text-blue-200 text-xs font-medium shadow-xl backdrop-blur-md">
+                <Cpu className="w-3.5 h-3.5 text-[#136CFC]" />
+                <span>ESP32-S3 Biometric Security Barrier</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-[#C4F84B] animate-pulse" />
+              </div>
+            </div>
+
+            {/* Main Card */}
+            <div className="bg-[#162542]/90 border border-[#21355a] backdrop-blur-xl rounded-2xl p-6 sm:p-8 shadow-2xl shadow-[#162542]/50 text-slate-100">
           {/* Header */}
           <div className="text-center mb-6">
-            <div className="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center shadow-lg shadow-indigo-500/25 mb-3 border border-indigo-400/30">
+            <div className="w-14 h-14 mx-auto rounded-2xl bg-[#136CFC] flex items-center justify-center shadow-lg shadow-[#136CFC]/30 mb-3 border border-blue-400/30">
               <ShieldCheck className="w-8 h-8 text-white" />
             </div>
             <h1 className="text-2xl font-bold tracking-tight text-white flex items-center justify-center space-x-2">
               <span>AttendX Admin Gate</span>
             </h1>
             <p className="text-xs text-slate-400 mt-1 max-w-xs mx-auto">
-              Hardware synchronized with ESP32-CAM, DY50 optical sensor, and Cloud Firestore.
+              Hardware synchronized with ESP32-CAM, SFM-V1.7 optical sensor, and Cloud Firestore.
             </p>
           </div>
 
@@ -368,7 +433,7 @@ export default function AdminAuthGate({ children }: { children: React.ReactNode 
                   <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider">
                     Administrator Email
                   </label>
-                  <span className="text-[10px] bg-indigo-950/80 text-indigo-300 border border-indigo-800/60 px-2 py-0.5 rounded-full font-mono">
+                  <span className="text-[10px] bg-[#162542] text-[#136CFC] border border-[#136CFC]/40 px-2 py-0.5 rounded-full font-mono">
                     Provisioned Admins Only
                   </span>
                 </div>
@@ -380,12 +445,12 @@ export default function AdminAuthGate({ children }: { children: React.ReactNode 
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder={masterEmail}
-                    className="w-full pl-10 pr-4 py-2.5 bg-slate-950/70 border border-slate-700/80 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-mono"
+                    className="w-full pl-10 pr-4 py-2.5 bg-slate-950/70 border border-slate-700/80 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#136CFC] focus:border-[#136CFC] transition-all font-mono"
                   />
                 </div>
                 <div className="mt-2 p-2 rounded-lg bg-slate-900/60 border border-slate-800 text-[11px] text-slate-400 space-y-1">
                   <p className="flex items-center space-x-1.5 text-slate-300 font-medium">
-                    <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" />
+                    <ShieldCheck className="w-3.5 h-3.5 text-[#136CFC]" />
                     <span>Security Policy:</span>
                   </p>
                   <p>
@@ -397,7 +462,7 @@ export default function AdminAuthGate({ children }: { children: React.ReactNode 
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full py-2.5 px-4 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-semibold text-sm rounded-xl shadow-lg shadow-indigo-600/30 flex items-center justify-center space-x-2 transition-all disabled:opacity-50"
+                className="w-full py-2.5 px-4 bg-[#136CFC] hover:bg-[#0d5ad4] text-white font-semibold text-sm rounded-xl shadow-lg shadow-[#136CFC]/30 flex items-center justify-center space-x-2 transition-all disabled:opacity-50"
               >
                 {isLoading ? (
                   <>
@@ -438,7 +503,7 @@ export default function AdminAuthGate({ children }: { children: React.ReactNode 
                     onChange={(e) => setOtpInput(e.target.value.replace(/\D/g, ''))}
                     placeholder="123456"
                     autoFocus
-                    className="w-full pl-10 pr-4 py-3 bg-slate-950/70 border border-indigo-500/50 rounded-xl text-lg tracking-[0.35em] text-center font-mono font-bold text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                    className="w-full pl-10 pr-4 py-3 bg-slate-950/70 border border-[#136CFC]/50 rounded-xl text-lg tracking-[0.35em] text-center font-mono font-bold text-white focus:outline-none focus:ring-2 focus:ring-[#136CFC] transition-all"
                   />
                 </div>
 
@@ -562,7 +627,7 @@ export default function AdminAuthGate({ children }: { children: React.ReactNode 
                 <button
                   type="button"
                   onClick={saveEmailJsSettings}
-                  className="w-full py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded transition-colors"
+                  className="w-full py-1.5 bg-[#136CFC] hover:bg-[#0d5ad4] text-white font-semibold text-xs rounded transition-colors shadow-sm shadow-[#136CFC]/25"
                 >
                   Save EmailJS Keys
                 </button>
@@ -570,23 +635,9 @@ export default function AdminAuthGate({ children }: { children: React.ReactNode 
             )}
           </div>
         </div>
-
-        {/* Hardware Architecture Footer Indicator */}
-        <div className="mt-4 flex items-center justify-between text-[11px] text-slate-400 px-2">
-          <div className="flex items-center space-x-1.5">
-            <Fingerprint className="w-3.5 h-3.5 text-indigo-400" />
-            <span>DY50 Optical Sensor</span>
-          </div>
-          <div className="flex items-center space-x-1.5">
-            <Camera className="w-3.5 h-3.5 text-indigo-400" />
-            <span>ESP32-S3-CAM Evidence</span>
-          </div>
-          <div className="flex items-center space-x-1.5">
-            <Terminal className="w-3.5 h-3.5 text-indigo-400" />
-            <span>20x4 LCD + 4x4 Keypad</span>
-          </div>
-        </div>
       </div>
     </div>
+  </div>
+</div>
   );
 }

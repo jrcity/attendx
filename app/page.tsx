@@ -193,14 +193,14 @@ export default function DashboardPage() {
     { name: 'Fingerprint', value: analytics.fingerprint || 0 },
     { name: 'PIN', value: analytics.pin || 0 },
   ]
-  const COLORS = ['#6366f1', '#f59e0b']
+  const COLORS = ['#136CFC', '#C4F84B']
 
   return (
     <div className="space-y-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900">
+          <h2 className="text-2xl font-bold tracking-tight text-[#136CFC]">
             Dashboard Overview
           </h2>
           <p className="text-xs text-slate-500 mt-1">
@@ -226,8 +226,8 @@ export default function DashboardPage() {
               </button>
             </div>
           ) : (
-            <span className="flex items-center text-emerald-700 font-semibold bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200 shadow-sm">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 mr-2 animate-pulse"></span>
+            <span className="flex items-center text-[#162542] font-semibold bg-[#C4F84B]/25 px-3 py-1 rounded-full border border-[#C4F84B] shadow-xs">
+              <span className="w-2 h-2 rounded-full bg-[#162542] mr-2 animate-pulse"></span>
               Live Terminal Sync (3s Auto-Refresh)
             </span>
           )}
@@ -459,7 +459,7 @@ function StatCard({ title, value, icon, highlight }: { title: string, value: num
   return (
     <Card className={cn(
       "border-slate-200 shadow-sm bg-white",
-      highlight === 'active' && "border-blue-200 bg-blue-50/20"
+      highlight === 'active' && "border-[#136CFC]/40 bg-[#136CFC]/5"
     )}>
       <CardContent className="p-4 sm:p-5">
         <div className="flex items-center justify-between">

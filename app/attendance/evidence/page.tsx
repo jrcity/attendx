@@ -58,7 +58,7 @@ export default function EvidencePage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between sm:items-end gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900">PIN Evidence Vault</h2>
+          <h2 className="text-2xl font-bold tracking-tight text-[#136CFC]">PIN Evidence Vault</h2>
           <p className="text-sm text-slate-500 mt-1">
             {isSimulationMode ? 'Simulated optical capture vault. Zero DB operations.' : 'ESP32-CAM optical evidence captures for PIN-based fallback authentication.'}
           </p>

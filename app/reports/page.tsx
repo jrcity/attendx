@@ -96,7 +96,7 @@ export default function ReportsPage() {
     <div className="space-y-6 max-w-4xl">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900">Attendance Reports & Exports</h2>
+          <h2 className="text-2xl font-bold tracking-tight text-[#136CFC]">Attendance Reports & Exports</h2>
           <p className="text-sm text-slate-500 mt-1">
             Generate and export custom attendance logs, compliance records, and authentication audit trails.
           </p>
@@ -114,7 +114,7 @@ export default function ReportsPage() {
         <Card className="md:col-span-2 border-slate-200 shadow-sm">
           <CardContent className="p-6 space-y-5">
             <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
-              <Filter className="w-4 h-4 text-blue-600" />
+              <Filter className="w-4 h-4 text-[#136CFC]" />
               <h3 className="font-semibold text-slate-900 text-sm">Export Criteria</h3>
             </div>
 
@@ -125,7 +125,7 @@ export default function ReportsPage() {
                   type="date" 
                   value={startDate} 
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full text-sm border border-slate-200 rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                  className="w-full text-sm border border-slate-200 rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-[#136CFC]" 
                 />
               </div>
 
@@ -135,7 +135,7 @@ export default function ReportsPage() {
                   type="date" 
                   value={endDate} 
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full text-sm border border-slate-200 rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                  className="w-full text-sm border border-slate-200 rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-[#136CFC]" 
                 />
               </div>
             </div>
@@ -146,7 +146,7 @@ export default function ReportsPage() {
                 <select 
                   value={role} 
                   onChange={(e) => setRole(e.target.value)}
-                  className="w-full text-sm border border-slate-200 rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full text-sm border border-slate-200 rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-[#136CFC]"
                 >
                   <option>All Roles</option>
                   <option>Student</option>
@@ -159,10 +159,10 @@ export default function ReportsPage() {
                 <select 
                   value={method} 
                   onChange={(e) => setMethod(e.target.value)}
-                  className="w-full text-sm border border-slate-200 rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full text-sm border border-slate-200 rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-[#136CFC]"
                 >
                   <option>All Methods</option>
-                  <option value="fingerprint">Fingerprint (DY50)</option>
+                  <option value="fingerprint">Fingerprint (SFM-V1.7)</option>
                   <option value="pin">Keypad PIN</option>
                 </select>
               </div>
@@ -172,7 +172,7 @@ export default function ReportsPage() {
                 <select 
                   value={status} 
                   onChange={(e) => setStatus(e.target.value)}
-                  className="w-full text-sm border border-slate-200 rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full text-sm border border-slate-200 rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-[#136CFC]"
                 >
                   <option>All Statuses</option>
                   <option>Present</option>
@@ -185,7 +185,7 @@ export default function ReportsPage() {
               <button 
                 onClick={handleExport}
                 disabled={exporting}
-                className="w-full inline-flex items-center justify-center rounded-md text-sm font-semibold transition-colors bg-blue-600 text-white hover:bg-blue-700 h-10 px-4 py-2 shadow-sm"
+                className="w-full inline-flex items-center justify-center rounded-md text-sm font-semibold transition-colors bg-[#136CFC] text-white hover:bg-[#0d5ad4] h-10 px-4 py-2 shadow-sm shadow-[#136CFC]/25"
               >
                 <Download className="w-4 h-4 mr-2" />
                 {exporting ? "Generating CSV Report..." : "Download CSV Attendance Export"}
